@@ -1,0 +1,8 @@
+{
+  "name": "Md Abdul Hai - Creative Visualizer Portfolio",
+  "description": "A high-end, AI-powered portfolio for Md Abdul Hai, featuring motion graphics, video editing, and graphic design with a full admin control panel and Supabase integration.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
