@@ -4,6 +4,7 @@ export interface SiteConfig {
   hero_title: string;
   hero_subtitle: string;
   hero_image_url?: string;
+  hero_video_url?: string;
   bio: string;
   experience_years: number;
   profile_pic_url: string;
