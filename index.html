@@ -7,6 +7,9 @@
     <title>Md Abdul Hai | Creative Visualizer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+      // Initialize a safe process object for the browser
+      window.process = window.process || { env: {} };
+      
       tailwind.config = {
         theme: {
           extend: {
@@ -74,7 +77,6 @@
         border-radius: 10px;
       }
 
-      /* Initial loader to prevent black screen */
       #initial-loader {
         position: fixed;
         inset: 0;
@@ -116,6 +118,17 @@
         0%, 100% { opacity: 0.5; }
         50% { opacity: 1; }
       }
+      #error-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.9);
+        color: #ff4b4b;
+        z-index: 10000;
+        padding: 2rem;
+        font-family: monospace;
+        overflow-y: auto;
+      }
     </style>
     <script type="importmap">
 {
@@ -133,21 +146,34 @@
 </script>
   </head>
   <body>
-    <!-- Cinematic Loader -->
     <div id="initial-loader">
       <div class="loader-content">
         <div class="spinner"></div>
-        <div class="loader-text">Initializing Portfolio</div>
+        <div class="loader-text">Loading Experience</div>
       </div>
+    </div>
+
+    <div id="error-overlay">
+      <h1 style="font-size: 1.5rem; margin-bottom: 1rem;">Application Error</h1>
+      <pre id="error-content"></pre>
     </div>
 
     <div id="root"></div>
 
-    <!-- Main Entry Point -->
     <script type="module" src="./index.tsx"></script>
 
     <script>
-      // Cleanly remove loader once the application has had a chance to render
+      // Global error tracking for module failures
+      window.onerror = function(message, source, lineno, colno, error) {
+        console.error('Captured Error:', message, error);
+        const overlay = document.getElementById('error-overlay');
+        const content = document.getElementById('error-content');
+        if (overlay && content) {
+          overlay.style.display = 'block';
+          content.textContent = `${message}\n\nStack Trace:\n${error ? error.stack : 'N/A'}`;
+        }
+      };
+
       window.addEventListener('load', () => {
         setTimeout(() => {
           const loader = document.getElementById('initial-loader');
@@ -155,7 +181,7 @@
             loader.style.opacity = '0';
             setTimeout(() => loader.remove(), 600);
           }
-        }, 1000); // Small buffer for React hydration
+        }, 800);
       });
     </script>
   </body>

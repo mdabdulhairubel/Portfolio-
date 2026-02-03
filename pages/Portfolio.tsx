@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Play, ExternalLink, X } from 'lucide-react';
-import { supabase } from '../supabase';
-import { Project } from '../types';
+import { supabase } from '../supabase.ts';
+import { Project } from '../types.ts';
 
 const Portfolio: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);

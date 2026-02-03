@@ -1,10 +1,16 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { supabase } from "./supabase";
+import { supabase } from "./supabase.ts";
 
 export const chatWithGemini = async (userInput: string) => {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const apiKey = (window as any).process?.env?.API_KEY || (process as any)?.env?.API_KEY;
+    if (!apiKey) {
+      console.warn("Gemini API Key is missing. Chatbot will be disabled.");
+      return "I'm currently disconnected from my creative brain. Please contact Md Abdul Hai directly via WhatsApp!";
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
     
     // Fetch knowledge base from site_config and services
     const { data: config } = await supabase.from('site_config').select('*').single();

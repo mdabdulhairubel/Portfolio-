@@ -2,8 +2,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Play, ArrowRight, Star, X } from 'lucide-react';
-import { supabase } from '../supabase';
-import { Service, Project, SiteConfig } from '../types';
+import { supabase } from '../supabase.ts';
+import { Service, Project, SiteConfig } from '../types.ts';
 
 const Home: React.FC = () => {
   const [config, setConfig] = useState<SiteConfig | null>(null);

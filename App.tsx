@@ -2,15 +2,15 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Menu, X, ChevronRight, MessageCircle } from 'lucide-react';
-import { NAV_ITEMS, SOCIAL_LINKS, APP_NAME } from './constants';
-import Home from './pages/Home';
-import About from './pages/About';
-import Services from './pages/Services';
-import Portfolio from './pages/Portfolio';
-import Blog from './pages/Blog';
-import Contact from './pages/Contact';
-import Admin from './pages/Admin';
-import Chatbot from './components/Chatbot';
+import { NAV_ITEMS, SOCIAL_LINKS, APP_NAME } from './constants.tsx';
+import Home from './pages/Home.tsx';
+import About from './pages/About.tsx';
+import Services from './pages/Services.tsx';
+import Portfolio from './pages/Portfolio.tsx';
+import Blog from './pages/Blog.tsx';
+import Contact from './pages/Contact.tsx';
+import Admin from './pages/Admin.tsx';
+import Chatbot from './components/Chatbot.tsx';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();

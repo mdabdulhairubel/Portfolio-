@@ -6,11 +6,11 @@ import {
   X, Save, Loader2, Upload, Camera, Youtube, Mail, Lock, Database,
   Star, AlertCircle, Info, Copy, ShieldAlert, Check
 } from 'lucide-react';
-import { supabase, uploadFile } from '../supabase';
+import { supabase, uploadFile } from '../supabase.ts';
 import { 
   Service, Project, Testimonial, BrandLogo, 
   BlogPost, ContactSubmission, SiteConfig 
-} from '../types';
+} from '../types.ts';
 
 const Admin: React.FC = () => {
   const [user, setUser] = useState<any>(null);
