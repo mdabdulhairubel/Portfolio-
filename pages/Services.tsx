@@ -47,10 +47,6 @@ const Services: React.FC = () => {
                 <h2 className="text-3xl md:text-4xl font-bold mb-6">{service.title}</h2>
                 <p className="text-gray-400 text-lg mb-8 leading-relaxed">{service.description}</p>
                 <div className="bg-gray-900/50 border border-gray-800 p-8 rounded-2xl mb-8">
-                  <div className="flex items-baseline gap-2 mb-6">
-                    <span className="text-4xl font-bold text-primary">{service.price}</span>
-                    <span className="text-gray-500 font-medium text-sm">Starting Price</span>
-                  </div>
                   <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {service.features.map((feature, fIdx) => (
                       <li key={fIdx} className="flex items-center gap-3 text-gray-300">
