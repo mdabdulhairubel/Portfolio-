@@ -52,6 +52,8 @@
         font-family: 'Inter', sans-serif;
         background-color: #030712;
         color: #f9fafb;
+        margin: 0;
+        overflow-x: hidden;
       }
       h1, h2, h3, h4, h5, h6 {
         font-family: 'Space Grotesk', sans-serif;
@@ -71,31 +73,49 @@
         background: #374151;
         border-radius: 10px;
       }
-      .marquee {
-        display: flex;
-        overflow: hidden;
-        user-select: none;
-        gap: 2rem;
-      }
-      .marquee-content {
-        flex-shrink: 0;
-        display: flex;
-        justify-content: space-around;
-        gap: 2rem;
-        min-width: 100%;
-        animation: scroll 30s linear infinite;
-      }
-      @keyframes scroll {
-        from { transform: translateX(0); }
-        to { transform: translateX(-100%); }
-      }
 
-      /* Delay utilities for staggered animations */
-      .delay-100 { animation-delay: 100ms; }
-      .delay-200 { animation-delay: 200ms; }
-      .delay-300 { animation-delay: 300ms; }
-      .delay-400 { animation-delay: 400ms; }
-      .delay-500 { animation-delay: 500ms; }
+      /* Initial loader to prevent black screen */
+      #initial-loader {
+        position: fixed;
+        inset: 0;
+        background: #030712;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        transition: opacity 0.6s ease-out;
+      }
+      .loader-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.5rem;
+      }
+      .spinner {
+        width: 48px;
+        height: 48px;
+        border: 3px solid rgba(0, 219, 154, 0.1);
+        border-top-color: #00db9a;
+        border-radius: 50%;
+        animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      }
+      .loader-text {
+        font-family: 'Space Grotesk', sans-serif;
+        color: #00db9a;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        animation: pulse 2s ease-in-out infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 0.5; }
+        50% { opacity: 1; }
+      }
     </style>
     <script type="importmap">
 {
@@ -103,6 +123,7 @@
     "react/": "https://esm.sh/react@^19.2.4/",
     "react": "https://esm.sh/react@^19.2.4",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react-dom/client": "https://esm.sh/react-dom@^19.2.4/client",
     "@google/genai": "https://esm.sh/@google/genai@^1.39.0",
     "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
     "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0",
@@ -112,6 +133,30 @@
 </script>
   </head>
   <body>
+    <!-- Cinematic Loader -->
+    <div id="initial-loader">
+      <div class="loader-content">
+        <div class="spinner"></div>
+        <div class="loader-text">Initializing Portfolio</div>
+      </div>
+    </div>
+
     <div id="root"></div>
+
+    <!-- Main Entry Point -->
+    <script type="module" src="./index.tsx"></script>
+
+    <script>
+      // Cleanly remove loader once the application has had a chance to render
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          const loader = document.getElementById('initial-loader');
+          if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => loader.remove(), 600);
+          }
+        }, 1000); // Small buffer for React hydration
+      });
+    </script>
   </body>
 </html>
