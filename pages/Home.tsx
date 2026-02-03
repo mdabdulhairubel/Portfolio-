@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, Play, ArrowRight, Star, X } from 'lucide-react';
+import { ChevronRight, Play, ArrowRight, Star, X, Sparkles, LayoutGrid } from 'lucide-react';
 import { supabase } from '../supabase.ts';
 import { Service, Project, SiteConfig } from '../types.ts';
 
@@ -41,20 +41,16 @@ const Home: React.FC = () => {
 
   const getYouTubeId = (input: string) => {
     if (!input) return null;
-    
-    // If full iframe code is provided, extract the src first
     let target = input;
     const srcMatch = input.match(/src=["']([^"']+)["']/);
     if (srcMatch) target = srcMatch[1];
-
-    // Extraction regex for all YouTube link formats
     const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube-nocookie\.com\/embed\/)([^"&?\/\s]{11})/i;
     const match = target.match(regExp);
     return (match && match[1]) ? match[1] : null;
   };
 
   const videoId = config?.hero_video_url ? getYouTubeId(config.hero_video_url) : null;
-  const embedUrl = videoId ? `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1` : "";
+  const embedUrl = videoId ? `https://www.youtube.com/embed/${videoId}?rel=0&autoplay=1` : "";
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-950">
@@ -62,8 +58,10 @@ const Home: React.FC = () => {
     </div>
   );
 
+  const isEmpty = services.length === 0 && projects.length === 0 && !config;
+
   return (
-    <div className="space-y-24 pb-24 overflow-hidden">
+    <div className="space-y-24 pb-24 overflow-hidden bg-gray-950 min-h-screen">
       {/* Hero Section */}
       <section className="relative min-h-[90vh] flex items-center pt-24">
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
@@ -73,9 +71,17 @@ const Home: React.FC = () => {
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div className="text-center lg:text-left opacity-0 animate-fade-up">
+            <div className="text-center lg:text-left animate-fade-up">
               <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-6">Available for New Projects</span>
-              <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold leading-[1.1] mb-6">{config?.hero_title || 'Md Abdul Hai'}</h1>
+              <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold leading-[1.1] mb-6 text-white">
+                {config?.hero_title ? (
+                  <>
+                    {config.hero_title.split(' ').slice(0, -1).join(' ')} <span className="gradient-text">{config.hero_title.split(' ').slice(-1)}</span>
+                  </>
+                ) : (
+                  <>Md Abdul <span className="gradient-text">Hai</span></>
+                )}
+              </h1>
               <p className="text-xl text-gray-400 mb-10 leading-relaxed max-w-xl mx-auto lg:mx-0">{config?.hero_subtitle || 'Visualizer & Creative Artist'}</p>
               
               <div className="flex flex-wrap justify-center lg:justify-start gap-6 items-center">
@@ -90,7 +96,7 @@ const Home: React.FC = () => {
                         <Play size={20} fill="currentColor" className="ml-1" />
                       </div>
                     </div>
-                    <div className="flex flex-col items-start">
+                    <div className="flex flex-col items-start text-left">
                       <span className="text-xs uppercase tracking-[0.2em] font-black">Watch Now</span>
                       <span className="text-[10px] text-gray-500 uppercase tracking-widest group-hover:text-primary/70">Showreel</span>
                     </div>
@@ -99,23 +105,20 @@ const Home: React.FC = () => {
               </div>
             </div>
 
-            <div className="relative flex justify-center lg:justify-end opacity-0 animate-zoom-in delay-200">
-              <div ref={heroImageRef} className="relative w-full max-w-2xl aspect-video group">
+            <div className="relative flex justify-center lg:justify-end animate-zoom-in">
+              <div ref={heroImageRef} className="relative w-full max-w-md aspect-[4/5] group">
                 <div className="absolute -inset-4 bg-primary/10 rounded-[2.5rem] blur-2xl -z-10 group-hover:bg-primary/20 transition-all duration-700"></div>
-                <div className="w-full h-full rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden border border-gray-800 shadow-2xl relative z-10 bg-gray-950">
-                  {videoId ? (
-                    <iframe 
-                      src={embedUrl}
-                      className="w-full h-full border-0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowFullScreen
-                      referrerPolicy="strict-origin-when-cross-origin"
-                    ></iframe>
-                  ) : config?.hero_image_url ? (
-                    <img src={config.hero_image_url} alt="Hero" className="w-full h-full object-cover" />
+                <div className="w-full h-full rounded-[2.5rem] overflow-hidden border border-gray-800 shadow-2xl relative z-10 bg-gray-950">
+                  {config?.hero_image_url || config?.profile_pic_url ? (
+                    <img 
+                      src={config.hero_image_url || config.profile_pic_url} 
+                      alt="Md Abdul Hai" 
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                    />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-800">
-                      <Star size={64} />
+                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-800 bg-gray-900 gap-4">
+                      <Star size={64} className="animate-pulse" />
+                      <span className="text-xs font-bold uppercase tracking-widest text-gray-600">No Image Uploaded</span>
                     </div>
                   )}
                 </div>
@@ -124,6 +127,22 @@ const Home: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Empty State Prompt */}
+      {isEmpty && (
+        <section className="max-w-4xl mx-auto px-4 text-center">
+          <div className="bg-primary/5 border border-primary/20 p-12 rounded-[3rem] space-y-6">
+            <div className="w-20 h-20 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
+              <Sparkles size={40} />
+            </div>
+            <h2 className="text-3xl font-bold text-white">Your Portfolio is Empty</h2>
+            <p className="text-gray-400 max-w-lg mx-auto">It looks like you haven't added any services or projects yet. Go to the Admin Panel to seed demo data or add your own content!</p>
+            <Link to="/admin" className="inline-flex items-center gap-2 px-8 py-4 bg-primary text-gray-950 font-bold rounded-full hover:scale-105 transition-transform">
+              Go to Admin Panel <ChevronRight size={20} />
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* Video Modal Popup */}
       {isModalOpen && videoId && (
@@ -136,7 +155,7 @@ const Home: React.FC = () => {
             <iframe 
               width="100%"
               height="100%"
-              src={embedUrl + "&autoplay=1"} 
+              src={embedUrl} 
               title="Full Screen Player"
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
@@ -148,53 +167,57 @@ const Home: React.FC = () => {
       )}
 
       {/* Services Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 opacity-0 animate-fade-up">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-5xl font-bold mb-4">My Services</h2>
-          <p className="text-gray-400 max-w-2xl mx-auto">Expert solutions tailored to elevate your brand's visual storytelling.</p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {services.map((service, idx) => (
-            <div key={service.id} className="group p-8 bg-gray-900/50 border border-gray-800 rounded-2xl hover:border-primary transition-all opacity-0 animate-fade-up" style={{ animationDelay: `${idx * 150}ms` }}>
-              <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-6 group-hover:scale-110 transition-transform">
-                <Star size={28} />
-              </div>
-              <h3 className="text-xl font-bold mb-4">{service.title}</h3>
-              <p className="text-gray-400 mb-6 line-clamp-3">{service.description}</p>
-              <Link to="/services" className="text-primary font-semibold flex items-center gap-2 group-hover:gap-3 transition-all">
-                Learn More <ChevronRight size={18} />
-              </Link>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Featured Projects */}
-      <section className="bg-gray-900/30 py-24 opacity-0 animate-fade-up">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-end mb-16">
-            <div>
-              <h2 className="text-3xl md:text-5xl font-bold mb-4">Featured Projects</h2>
-              <p className="text-gray-400">A hand-picked selection of my best work.</p>
-            </div>
-            <Link to="/portfolio" className="hidden md:flex items-center gap-2 text-primary font-semibold group">
-              View All Projects <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-            </Link>
+      {services.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 animate-fade-up">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">My Services</h2>
+            <p className="text-gray-400 max-w-2xl mx-auto">Expert solutions tailored to elevate your brand's visual storytelling.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {projects.map((project, idx) => (
-              <Link to="/portfolio" key={project.id} className="group relative overflow-hidden rounded-2xl aspect-video bg-gray-800 opacity-0 animate-zoom-in" style={{ animationDelay: `${idx * 200}ms` }}>
-                <img src={project.thumbnail_url} alt={project.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent flex flex-col justify-end p-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className="text-primary text-sm font-semibold mb-2 uppercase tracking-wider">{project.category}</span>
-                  <h3 className="text-2xl font-bold text-white mb-2">{project.title}</h3>
-                  <div className="flex items-center gap-2 text-gray-300">View Project <ChevronRight size={16} /></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {services.map((service, idx) => (
+              <div key={service.id} className="group p-8 bg-gray-900/50 border border-gray-800 rounded-2xl hover:border-primary transition-all animate-fade-up" style={{ animationDelay: `${idx * 150}ms` }}>
+                <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-6 group-hover:scale-110 transition-transform">
+                  <Star size={28} />
                 </div>
-              </Link>
+                <h3 className="text-xl font-bold mb-4">{service.title}</h3>
+                <p className="text-gray-400 mb-6 line-clamp-3">{service.description}</p>
+                <Link to="/services" className="text-primary font-semibold flex items-center gap-2 group-hover:gap-3 transition-all">
+                  Learn More <ChevronRight size={18} />
+                </Link>
+              </div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
+      )}
+
+      {/* Featured Projects */}
+      {projects.length > 0 && (
+        <section className="bg-gray-900/30 py-24 animate-fade-up">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-end mb-16">
+              <div>
+                <h2 className="text-3xl md:text-5xl font-bold mb-4">Featured Projects</h2>
+                <p className="text-gray-400">A hand-picked selection of my best work.</p>
+              </div>
+              <Link to="/portfolio" className="hidden md:flex items-center gap-2 text-primary font-semibold group">
+                View All Projects <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {projects.map((project, idx) => (
+                <Link to="/portfolio" key={project.id} className="group relative overflow-hidden rounded-2xl aspect-video bg-gray-800 animate-zoom-in" style={{ animationDelay: `${idx * 200}ms` }}>
+                  <img src={project.thumbnail_url} alt={project.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent flex flex-col justify-end p-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-primary text-sm font-semibold mb-2 uppercase tracking-wider">{project.category}</span>
+                    <h3 className="text-2xl font-bold text-white mb-2">{project.title}</h3>
+                    <div className="flex items-center gap-2 text-gray-300">View Project <ChevronRight size={16} /></div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 };

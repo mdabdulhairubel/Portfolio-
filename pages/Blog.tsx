@@ -1,8 +1,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { Calendar, User, ArrowRight, ChevronRight } from 'lucide-react';
-import { supabase } from '../supabase';
-import { BlogPost } from '../types';
+import { supabase } from '../supabase.ts';
+import { BlogPost } from '../types.ts';
 
 const Blog: React.FC = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);

@@ -4,48 +4,46 @@ import { supabase } from "./supabase.ts";
 
 export const chatWithGemini = async (userInput: string) => {
   try {
-    const apiKey = (window as any).process?.env?.API_KEY || (process as any)?.env?.API_KEY;
+    const apiKey = process.env.API_KEY || "";
     if (!apiKey) {
-      console.warn("Gemini API Key is missing. Chatbot will be disabled.");
-      return "I'm currently disconnected from my creative brain. Please contact Md Abdul Hai directly via WhatsApp!";
+      console.warn("Gemini API Key missing.");
+      return "I'm offline right now, but you can contact Md Abdul Hai directly on WhatsApp!";
     }
 
     const ai = new GoogleGenAI({ apiKey });
     
-    // Fetch knowledge base from site_config and services
+    // Fetch knowledge context from Supabase
     const { data: config } = await supabase.from('site_config').select('*').single();
     const { data: services } = await supabase.from('services').select('*');
-    const { data: projects } = await supabase.from('projects').select('*').limit(5);
 
-    const context = `
-      You are an AI assistant for Md Abdul Hai, a Visualizer (Graphic Designer, Motion Graphics Designer, Video Editor).
-      Website Content Knowledge:
-      - Name: Md Abdul Hai
-      - Experience: 5+ years
-      - Services: ${services?.map(s => `${s.title}: ${s.description} at ${s.price}`).join(', ')}
-      - Top Projects: ${projects?.map(p => p.title).join(', ')}
-      - Bio: ${config?.bio || 'Professional creative expert'}
-      - Contact: WhatsApp +8801779672765, Email mdabdulhai2506@gmail.com
-      - Extra Context: ${config?.chatbot_knowledge || ''}
-
-      STRICT RULES:
-      1. ONLY answer based on the provided information. 
-      2. If you don't know, suggest contacting Md Abdul Hai via WhatsApp.
-      3. Tone: Friendly, professional, and helpful (Cat-style personality - cute but skilled).
+    const systemPrompt = `
+      You are "Hai's Creative Assistant", an AI expert for Md Abdul Hai (Visualizer & Motion Designer).
+      
+      CONTEXT:
+      - Boss: Md Abdul Hai
+      - Experience: 5+ Years in Motion Graphics, CGI Ads, and Graphic Design.
+      - Services Offered: ${services?.map(s => `${s.title} (${s.price})`).join(', ') || 'CGI Commercials, Motion Design, Branding'}
+      - Personality: Professional, creative, slightly feline-themed (uses "Meow" occasionally), and helpful.
+      - Contact: WhatsApp (+8801779672765) or Email (mdabdulhai2506@gmail.com)
+      
+      RULES:
+      1. Always refer to yourself as Hai's assistant.
+      2. If you don't know something specifically, steer the conversation toward booking a consultation.
+      3. Be concise and engaging.
     `;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: userInput,
       config: {
-        systemInstruction: context,
-        temperature: 0.7,
+        systemInstruction: systemPrompt,
+        temperature: 0.8,
       },
     });
 
     return response.text;
   } catch (error) {
     console.error("Gemini Error:", error);
-    return "I'm having a little nap right now. Purr... please try again or contact my boss via WhatsApp!";
+    return "Meow... I'm feeling a bit sleepy. Try again later or text my boss on WhatsApp!";
   }
 };

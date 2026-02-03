@@ -2,8 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle2, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../supabase';
-import { Service } from '../types';
+import { supabase } from '../supabase.ts';
+import { Service } from '../types.ts';
 
 const Services: React.FC = () => {
   const [services, setServices] = useState<Service[]>([]);

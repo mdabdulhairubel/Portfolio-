@@ -1,8 +1,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { Play, Calendar, Award, Cpu, ArrowRight } from 'lucide-react';
-import { supabase } from '../supabase';
-import { SiteConfig } from '../types';
+import { supabase } from '../supabase.ts';
+import { SiteConfig } from '../types.ts';
 
 const About: React.FC = () => {
   const [config, setConfig] = useState<SiteConfig | null>(null);

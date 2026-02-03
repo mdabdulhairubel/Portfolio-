@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
 import { Send, Mail, Phone, MapPin, CheckCircle2, Loader2, MessageSquare } from 'lucide-react';
-import { supabase } from '../supabase';
-import { SOCIAL_LINKS } from '../constants';
+import { supabase } from '../supabase.ts';
+import { SOCIAL_LINKS } from '../constants.tsx';
 
 const Contact: React.FC = () => {
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
