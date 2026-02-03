@@ -129,7 +129,7 @@ const Admin: React.FC = () => {
       console.error("Save error:", error);
       alert('Error updating config: ' + error.message);
     } else {
-      alert('Settings saved! Your home page image and video should now be updated.');
+      alert('Settings saved! Site content has been updated.');
       setHasUnsavedChanges(false);
       if (savedData && savedData[0]) {
         setConfigForm(savedData[0]);
@@ -150,34 +150,10 @@ const Admin: React.FC = () => {
       alert('Image uploaded to storage! Now click the green "Save All Changes" button.');
     } catch (err: any) {
       console.error("Upload error:", err);
-      if (err.message.includes('row-level security') || err.message.includes('RLS')) {
-        setShowRlsFix(true);
-        alert(`SECURITY ERROR: RLS policy is blocking uploads.`);
-      } else {
-        alert(`Upload failed: ${err.message}`);
-      }
+      alert(`Upload failed: ${err.message}`);
     } finally {
       setSaving(false);
     }
-  };
-
-  const copySql = () => {
-    const sql = `-- RUN THIS IN SUPABASE SQL EDITOR
--- 1. Enable RLS
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
-
--- 2. Allow Auth Uploads to bucket "${bucketName}"
-CREATE POLICY "Allow Auth Uploads" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = '${bucketName}');
-
--- 3. Allow Public Read for bucket "${bucketName}"
-CREATE POLICY "Allow Public Access" ON storage.objects FOR SELECT TO public USING (bucket_id = '${bucketName}');
-
--- 4. Allow Auth Update/Delete
-CREATE POLICY "Allow Auth Update" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = '${bucketName}');
-CREATE POLICY "Allow Auth Delete" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = '${bucketName}');`;
-    
-    navigator.clipboard.writeText(sql);
-    alert('SQL copied! Go to Supabase SQL Editor and RUN it.');
   };
 
   if (authLoading) return (
@@ -250,32 +226,27 @@ CREATE POLICY "Allow Auth Delete" ON storage.objects FOR DELETE TO authenticated
                 </div>
               </div>
 
-              {showRlsFix && (
-                <div className="bg-red-950/20 border border-red-500/30 p-8 rounded-[2rem] space-y-4">
-                  <h4 className="text-xl font-bold text-red-400 flex items-center gap-2"><ShieldAlert /> Fix Needed!</h4>
-                  <p className="text-gray-400 text-sm">Uploads are blocked by RLS policies. Copy and run the fix below in Supabase SQL Editor:</p>
-                  <button onClick={copySql} className="w-full py-4 bg-red-500/20 text-red-400 border border-red-500/30 rounded-2xl font-bold hover:bg-red-500/30">
-                    Copy SQL Fix
-                  </button>
-                </div>
-              )}
-
               <div className="bg-gray-900/50 p-8 rounded-[2.5rem] border border-gray-800 space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-                  <div className="aspect-[4/5] bg-gray-950 rounded-3xl overflow-hidden border border-gray-800 relative group cursor-pointer">
-                    {configForm.hero_image_url ? (
-                      <img src={configForm.hero_image_url} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-gray-700">
-                        <ImageIcon size={64} />
-                        <p className="font-bold mt-2">No Image</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
+                  <div className="space-y-6">
+                     <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Hero Image (Fallback)</label>
+                      <div className="aspect-[4/5] bg-gray-950 rounded-3xl overflow-hidden border border-gray-800 relative group cursor-pointer">
+                        {configForm.hero_image_url ? (
+                          <img src={configForm.hero_image_url} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-gray-700">
+                            <ImageIcon size={64} />
+                            <p className="font-bold mt-2">No Image</p>
+                          </div>
+                        )}
+                        <label className="absolute inset-0 bg-gray-950/80 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-all cursor-pointer">
+                          <Upload size={40} className="text-primary mb-2" />
+                          <span className="font-bold text-white text-xs uppercase">Upload Hero</span>
+                          <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'hero_image_url')} />
+                        </label>
                       </div>
-                    )}
-                    <label className="absolute inset-0 bg-gray-950/80 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-all cursor-pointer">
-                      <Upload size={40} className="text-primary mb-2" />
-                      <span className="font-bold text-white text-xs uppercase">Upload New Hero</span>
-                      <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'hero_image_url')} />
-                    </label>
+                    </div>
                   </div>
                   <div className="space-y-6">
                     <div>
@@ -287,13 +258,15 @@ CREATE POLICY "Allow Auth Delete" ON storage.objects FOR DELETE TO authenticated
                       <textarea rows={3} className="w-full bg-gray-950 border border-gray-800 rounded-xl px-5 py-4 text-white focus:border-primary outline-none resize-none" value={configForm.hero_subtitle || ''} onChange={(e) => handleConfigChange({ hero_subtitle: e.target.value })} />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">YouTube Video URL</label>
-                      <input 
-                        className="w-full bg-gray-950 border border-gray-800 rounded-xl px-5 py-4 text-white focus:border-primary outline-none" 
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">YouTube Video (Full Embed Code or URL)</label>
+                      <textarea 
+                        rows={4}
+                        className="w-full bg-gray-950 border border-gray-800 rounded-xl px-5 py-4 text-white focus:border-primary outline-none font-mono text-sm" 
                         value={configForm.hero_video_url || ''} 
-                        onChange={(e) => handleConfigChange({ hero_video_url: e.target.value.trim() })} 
-                        placeholder="Paste YouTube link here"
+                        onChange={(e) => handleConfigChange({ hero_video_url: e.target.value })} 
+                        placeholder="Paste <iframe ...></iframe> or YouTube link here"
                       />
+                      <p className="text-[10px] text-gray-500 mt-2 italic px-1">Tip: Paste the full embed code from YouTube for best results.</p>
                     </div>
                   </div>
                 </div>

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { HashRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Menu, X, ChevronRight, MessageCircle } from 'lucide-react';
 import { NAV_ITEMS, SOCIAL_LINKS, APP_NAME } from './constants';
 import Home from './pages/Home';
