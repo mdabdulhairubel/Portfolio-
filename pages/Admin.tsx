@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Settings, Briefcase, LayoutGrid, FileText, Image as ImageIcon, 
@@ -193,6 +192,10 @@ const Admin: React.FC = () => {
                     <div>
                       <label className="text-xs text-gray-500 font-bold uppercase block mb-2">Portfolio Name</label>
                       <input className="w-full bg-gray-950 border border-gray-800 rounded-xl px-5 py-3.5 text-white outline-none focus:border-primary transition-all" value={data.config.hero_title || ''} onChange={(e) => setData({ ...data, config: { ...data.config, hero_title: e.target.value } })} />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 font-bold uppercase block mb-2">Short Description (Yellow Area)</label>
+                      <textarea rows={3} className="w-full bg-gray-950 border border-gray-800 rounded-xl px-5 py-3.5 text-white outline-none focus:border-primary transition-all resize-none" value={data.config.hero_description || ''} onChange={(e) => setData({ ...data, config: { ...data.config, hero_description: e.target.value } })} placeholder="Write a short paragraph for the hero section..." />
                     </div>
                     <div>
                       <label className="text-xs text-gray-500 font-bold uppercase block mb-2">Display Subtitle</label>

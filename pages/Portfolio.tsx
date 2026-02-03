@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Play, ExternalLink, X } from 'lucide-react';
 import { supabase } from '../supabase.ts';
@@ -39,40 +38,45 @@ const Portfolio: React.FC = () => {
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-950"><div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>;
 
   return (
-    <div className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="text-center mb-20 opacity-0 animate-fade-up">
-        <h1 className="text-4xl md:text-6xl font-bold mb-6">Work Showcase</h1>
-        <p className="text-gray-400 max-w-2xl mx-auto text-lg">Explore my latest projects across various creative disciplines.</p>
-      </div>
+    <div className="py-24 relative overflow-hidden">
+      {/* Texture Layer */}
+      <div className="absolute top-0 left-0 w-full h-[500px] bg-grid-subtle opacity-40 pointer-events-none"></div>
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="text-center mb-20 opacity-0 animate-fade-up">
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 tracking-tighter">Work Showcase</h1>
+          <p className="text-gray-400 max-w-2xl mx-auto text-lg">Explore my latest projects across various creative disciplines.</p>
+        </div>
 
-      <div className="flex flex-wrap justify-center gap-2 mb-16 opacity-0 animate-fade-in delay-200">
-        {categories.map((cat) => (
-          <button key={cat} onClick={() => setFilter(cat)} className={`px-6 py-3 rounded-full font-bold transition-all ${filter === cat ? 'bg-primary text-gray-950 shadow-lg shadow-primary/20' : 'bg-gray-900 text-gray-400 hover:text-white'}`}>
-            {cat}
-          </button>
-        ))}
-      </div>
+        <div className="flex flex-wrap justify-center gap-2 mb-16 opacity-0 animate-fade-in delay-200">
+          {categories.map((cat) => (
+            <button key={cat} onClick={() => setFilter(cat)} className={`px-6 py-3 rounded-full font-bold transition-all ${filter === cat ? 'bg-primary text-gray-950 shadow-lg shadow-primary/20' : 'bg-gray-900 text-gray-400 hover:text-white'}`}>
+              {cat}
+            </button>
+          ))}
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {filteredProjects.map((project, idx) => (
-          <div key={project.id} className="group bg-gray-900 border border-gray-800 rounded-3xl overflow-hidden hover:border-primary transition-all opacity-0 animate-zoom-in" style={{ animationDelay: `${(idx % 6) * 100}ms` }}>
-            <div className="relative aspect-video overflow-hidden">
-              <img src={project.thumbnail_url} alt={project.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-              <div className="absolute inset-0 bg-gray-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                {project.type === 'video' ? (
-                  <button onClick={() => setSelectedVideo(project.media_url)} className="w-16 h-16 bg-primary text-gray-950 rounded-full flex items-center justify-center shadow-xl transform scale-90 group-hover:scale-100 transition-transform"><Play size={32} fill="currentColor" /></button>
-                ) : (
-                  <a href={project.media_url} target="_blank" rel="noopener noreferrer" className="w-16 h-16 bg-primary text-gray-950 rounded-full flex items-center justify-center shadow-xl transform scale-90 group-hover:scale-100 transition-transform"><ExternalLink size={32} /></a>
-                )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {filteredProjects.map((project, idx) => (
+            <div key={project.id} className="group bg-gray-900 border border-gray-800 rounded-3xl overflow-hidden hover:border-primary transition-all opacity-0 animate-zoom-in" style={{ animationDelay: `${(idx % 6) * 100}ms` }}>
+              <div className="relative aspect-video overflow-hidden">
+                <img src={project.thumbnail_url} alt={project.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                <div className="absolute inset-0 bg-gray-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  {project.type === 'video' ? (
+                    <button onClick={() => setSelectedVideo(project.media_url)} className="w-16 h-16 bg-primary text-gray-950 rounded-full flex items-center justify-center shadow-xl transform scale-90 group-hover:scale-100 transition-transform"><Play size={32} fill="currentColor" /></button>
+                  ) : (
+                    <a href={project.media_url} target="_blank" rel="noopener noreferrer" className="w-16 h-16 bg-primary text-gray-950 rounded-full flex items-center justify-center shadow-xl transform scale-90 group-hover:scale-100 transition-transform"><ExternalLink size={32} /></a>
+                  )}
+                </div>
+              </div>
+              <div className="p-6">
+                <span className="text-primary text-xs font-bold uppercase tracking-widest mb-2 block">{project.category}</span>
+                <h3 className="text-xl font-bold text-white mb-2 tracking-tight">{project.title}</h3>
+                <p className="text-gray-400 text-sm line-clamp-2 leading-relaxed">{project.description}</p>
               </div>
             </div>
-            <div className="p-6">
-              <span className="text-primary text-xs font-bold uppercase tracking-widest mb-2 block">{project.category}</span>
-              <h3 className="text-xl font-bold text-white mb-2">{project.title}</h3>
-              <p className="text-gray-400 text-sm line-clamp-2 leading-relaxed">{project.description}</p>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {selectedVideo && (

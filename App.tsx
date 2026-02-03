@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Menu, X, ChevronRight, MessageSquare } from 'lucide-react';
@@ -11,6 +10,8 @@ import Blog from './pages/Blog.tsx';
 import Contact from './pages/Contact.tsx';
 import Admin from './pages/Admin.tsx';
 import Chatbot from './components/Chatbot.tsx';
+import CustomCursor from './components/CustomCursor.tsx';
+import WaterCursorEffect from './components/WaterCursorEffect.tsx';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -166,23 +167,56 @@ const Footer = () => {
   );
 };
 
+const AnimatedRoutes = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    // Scroll reveal observer
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const target = entry.target as HTMLElement;
+          const animation = target.getAttribute('data-scroll-animation') || 'animate-fade-up';
+          target.classList.add(animation);
+          target.classList.remove('opacity-0');
+          observer.unobserve(target);
+        }
+      });
+    }, { threshold: 0.1 });
+
+    // Look for elements with data-scroll attribute
+    document.querySelectorAll('[data-scroll]').forEach(el => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, [location.pathname]);
+  
+  return (
+    <main 
+      key={location.pathname} 
+      className="flex-grow animate-fade-in"
+    >
+      <Routes location={location}>
+        <Route path="/" element={<Home />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/services" element={<Services />} />
+        <Route path="/portfolio" element={<Portfolio />} />
+        <Route path="/blog" element={<Blog />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/admin/*" element={<Admin />} />
+      </Routes>
+    </main>
+  );
+};
+
 const App: React.FC = () => {
   return (
     <Router>
       <ScrollToTop />
+      <CustomCursor />
+      <WaterCursorEffect />
       <div className="min-h-screen flex flex-col">
         <Header />
-        <main className="flex-grow">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/services" element={<Services />} />
-            <Route path="/portfolio" element={<Portfolio />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/admin/*" element={<Admin />} />
-          </Routes>
-        </main>
+        <AnimatedRoutes />
         <Footer />
         <Chatbot />
       </div>
