@@ -42,6 +42,17 @@ export interface Service {
   features: string[];
 }
 
+export interface PricingPlan {
+  id: string;
+  title: string;
+  price: string;
+  description: string;
+  features: string[];
+  is_popular: boolean;
+  button_text: string;
+  created_at: string;
+}
+
 export interface Project {
   id: string;
   title: string;
