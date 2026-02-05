@@ -40,6 +40,7 @@
               'spin-slow': 'spin 8s linear infinite',
               'marquee': 'marquee 40s linear infinite',
               'ping-slow': 'ping 3s cubic-bezier(0, 0, 0.2, 1) infinite',
+              'scroll-line': 'scrollLine 2s ease-in-out infinite',
             },
             keyframes: {
               fadeUp: {
@@ -63,6 +64,10 @@
                   transform: 'scale(2)',
                   opacity: '0',
                 },
+              },
+              scrollLine: {
+                '0%': { transform: 'translateY(-100%)' },
+                '100%': { transform: 'translateY(100%)' },
               }
             }
           }

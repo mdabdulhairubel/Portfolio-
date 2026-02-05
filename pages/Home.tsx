@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { 
@@ -9,7 +8,8 @@ import {
   Clock as IconClock, Layers as IconLayers, Youtube as IconYoutube, 
   ExternalLink as IconExternal, Calendar as IconCalendar, 
   Info as IconInfo, Target as IconTarget, Zap as IconZap, 
-  Heart as IconHeart, Award as IconAward, Quote as IconQuote 
+  Heart as IconHeart, Award as IconAward, Quote as IconQuote,
+  ChevronDown as IconChevronDown
 } from 'lucide-react';
 import { supabase } from '../supabase.ts';
 import { Service, Project, SiteConfig, Testimonial, BrandLogo, PricingPlan } from '../types.ts';
@@ -71,7 +71,7 @@ const Home: React.FC = () => {
     fetchData();
   }, []);
 
-  // Parallax Logic
+  // Parallax & Spotlight Logic
   useEffect(() => {
     if (loading) return;
     let animationFrame: number;
@@ -80,28 +80,41 @@ const Home: React.FC = () => {
     const animate = () => {
       const container = imageContainerRef.current;
       if (container) {
-        currentRotation.current.x = lerp(currentRotation.current.x, targetRotation.current.x, 0.1);
-        currentRotation.current.y = lerp(currentRotation.current.y, targetRotation.current.y, 0.1);
-        currentRotation.current.tx = lerp(currentRotation.current.tx, targetRotation.current.tx, 0.1);
-        currentRotation.current.ty = lerp(currentRotation.current.ty, targetRotation.current.ty, 0.1);
-        container.style.transform = `perspective(1200px) rotateX(${currentRotation.current.x}deg) rotateY(${currentRotation.current.y}deg) translate3d(${currentRotation.current.tx}px, ${currentRotation.current.ty}px, 0)`;
+        currentRotation.current.x = lerp(currentRotation.current.x, targetRotation.current.x, 0.08);
+        currentRotation.current.y = lerp(currentRotation.current.y, targetRotation.current.y, 0.08);
+        currentRotation.current.tx = lerp(currentRotation.current.tx, targetRotation.current.tx, 0.08);
+        currentRotation.current.ty = lerp(currentRotation.current.ty, targetRotation.current.ty, 0.08);
+        container.style.transform = `perspective(1000px) rotateX(${currentRotation.current.x}deg) rotateY(${currentRotation.current.y}deg) translate3d(${currentRotation.current.tx}px, ${currentRotation.current.ty}px, 0)`;
       }
       animationFrame = requestAnimationFrame(animate);
     };
 
     const handleMouseMove = (e: MouseEvent) => {
       const hero = heroRef.current;
-      if (!hero) return;
+      const container = imageContainerRef.current;
+      if (!hero || !container) return;
+
       const { left, top, width, height } = hero.getBoundingClientRect();
       const x = ((e.clientX - left) / width - 0.5) * 2; 
       const y = ((e.clientY - top) / height - 0.5) * 2;
-      targetRotation.current = { x: -y * 6, y: x * 6, tx: x * 12, ty: y * 12 };
+      
+      // Update tilt targets (increased intensity for more interaction)
+      targetRotation.current = { x: -y * 12, y: x * 12, tx: x * 20, ty: y * 20 };
+
+      // Update Spotlight position relative to the image container
+      const rect = container.getBoundingClientRect();
+      const lx = ((e.clientX - rect.left) / rect.width) * 100;
+      const ly = ((e.clientY - rect.top) / rect.height) * 100;
+      container.style.setProperty('--spotlight-x', `${lx}%`);
+      container.style.setProperty('--spotlight-y', `${ly}%`);
     };
 
     const hero = heroRef.current;
     if (hero) {
       hero.addEventListener('mousemove', handleMouseMove);
-      hero.addEventListener('mouseleave', () => targetRotation.current = { x: 0, y: 0, tx: 0, ty: 0 });
+      hero.addEventListener('mouseleave', () => {
+        targetRotation.current = { x: 0, y: 0, tx: 0, ty: 0 };
+      });
       animationFrame = requestAnimationFrame(animate);
     }
     return () => {
@@ -156,6 +169,13 @@ const Home: React.FC = () => {
     return (match && match[1]) ? match[1] : null;
   };
 
+  const handleScrollDown = () => {
+    const nextSection = document.getElementById('why-choose-me');
+    if (nextSection) {
+      nextSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   const heroVideoId = config?.hero_video_url ? getYouTubeId(config.hero_video_url) : null;
   const heroEmbedUrl = heroVideoId ? `https://www.youtube.com/embed/${heroVideoId}?rel=0&autoplay=1` : "";
 
@@ -170,56 +190,133 @@ const Home: React.FC = () => {
   return (
     <div className="space-y-24 pb-24 overflow-hidden bg-gray-950 min-h-screen">
       {/* Hero Section */}
-      <section ref={heroRef} className="relative min-h-[85vh] flex items-center pt-16 lg:pt-10 group/hero">
+      <section ref={heroRef} className="relative min-h-[100vh] flex items-center pt-24 pb-20 lg:pt-16 lg:pb-32 group/hero overflow-hidden">
         <div className="absolute inset-0 z-0 pointer-events-none">
-          <div className="absolute inset-0 bg-grid-subtle"></div>
-          <div className="absolute top-0 left-0 w-[50rem] h-[50rem] bg-primary/10 rounded-full blur-[180px]"></div>
+          <div className="absolute inset-0 bg-grid-subtle opacity-30"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60rem] h-[60rem] bg-primary/10 rounded-full blur-[200px] opacity-60"></div>
+          <div className="absolute -top-[10%] -left-[10%] w-[40rem] h-[40rem] bg-primary/5 rounded-full blur-[150px]"></div>
         </div>
         
-        <div className="max-w-[1440px] mx-auto px-6 sm:px-10 lg:px-12 relative z-10 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-32 items-center">
-            <div className="lg:col-span-6 flex flex-col items-center lg:items-start text-center lg:text-left">
-              <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-primary/5 border border-primary/20 text-primary text-[11px] font-black uppercase tracking-[0.25em] mb-6 animate-fade-in backdrop-blur-md">
+        <div className="max-w-[1440px] mx-auto px-6 sm:px-10 lg:px-16 relative z-10 w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 items-center">
+            {/* Left Content Column */}
+            <div className="lg:col-span-7 xl:col-span-6 flex flex-col items-center lg:items-start text-center lg:text-left">
+              <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.3em] mb-10 animate-fade-in backdrop-blur-xl shadow-xl shadow-primary/5">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                </span>
                 Available for Global Projects
               </div>
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-bold leading-[1.1] mb-6 text-white tracking-tighter animate-fade-up">
+
+              <h1 className="text-5xl sm:text-7xl lg:text-8xl font-bold leading-[1] mb-8 text-white tracking-tighter animate-fade-up">
                 {config?.hero_title || 'Md Abdul Hai'}<span className="text-primary">.</span>
               </h1>
-              <div className="flex flex-col sm:flex-row items-center gap-5 mb-6 animate-fade-up [animation-delay:200ms]">
-                <p className="text-xl md:text-2xl text-gray-400 font-medium tracking-tight">
+
+              <div className="flex flex-col sm:flex-row items-center gap-6 mb-10 animate-fade-up [animation-delay:200ms]">
+                <div className="h-px w-12 bg-primary hidden lg:block"></div>
+                <p className="text-2xl md:text-3xl text-white/90 font-semibold tracking-tight">
                   {config?.hero_role || 'Senior Visualizer & Motion Storyteller'}
                 </p>
               </div>
               
-              <p className="text-lg text-gray-400 max-w-lg mb-8 animate-fade-up [animation-delay:300ms]">
-                {config?.hero_subtitle || 'Crafting cinematic experiences through advanced motion design and high-end CGI advertisements.'}
+              <p className="text-lg md:text-xl text-gray-400 max-w-xl mb-14 leading-relaxed animate-fade-up [animation-delay:350ms]">
+                {config?.hero_subtitle || 'Crafting cinematic experiences through advanced motion design and high-end CGI advertisements for visionary brands.'}
               </p>
 
-              <div className="flex flex-wrap justify-center lg:justify-start gap-6 items-center animate-fade-up [animation-delay:500ms]">
-                <a href="#contact-section" className="group px-10 py-5 bg-primary hover:bg-primary-hover text-gray-950 font-black rounded-2xl transition-all flex items-center gap-3">
-                  Start a Project <IconArrow size={20} className="group-hover:translate-x-1.5 transition-transform" />
+              <div className="flex flex-wrap justify-center lg:justify-start gap-5 items-center animate-fade-up [animation-delay:500ms]">
+                <a 
+                  href="#contact-section" 
+                  className="group px-12 py-5 bg-primary hover:bg-primary-hover text-gray-950 font-black rounded-2xl transition-all flex items-center gap-3 shadow-2xl shadow-primary/20 hover:scale-[1.03] active:scale-95"
+                >
+                  Start a Project <IconArrow size={22} className="group-hover:translate-x-1.5 transition-transform" />
                 </a>
-                <Link to="/portfolio" className="px-10 py-5 bg-white/5 border border-white/10 text-white font-black rounded-2xl transition-all">Explore Work</Link>
+                
+                <Link 
+                  to="/portfolio" 
+                  className="px-12 py-5 bg-white/5 border border-white/10 text-white font-black rounded-2xl transition-all hover:bg-white/10 hover:border-white/20 active:scale-95"
+                >
+                  Explore Work
+                </Link>
+
                 {heroVideoId && (
-                  <button onClick={() => setIsHeroModalOpen(true)} className="w-16 h-16 rounded-2xl border border-white/10 hover:border-primary transition-all bg-gray-900/60 flex items-center justify-center">
-                    <IconPlay size={22} className="text-primary" fill="currentColor" />
-                  </button>
+                  <div className="relative">
+                    {/* Animated Pulse Background Rings */}
+                    <div className="absolute inset-0 rounded-2xl bg-primary/30 animate-ping-slow pointer-events-none"></div>
+                    <div className="absolute inset-0 rounded-2xl bg-primary/10 animate-pulse pointer-events-none delay-700"></div>
+                    
+                    <button 
+                      onClick={() => setIsHeroModalOpen(true)} 
+                      className="relative w-16 h-16 rounded-2xl border border-white/10 hover:border-primary transition-all bg-gray-900/60 backdrop-blur-md flex items-center justify-center group/play shadow-xl overflow-hidden"
+                    >
+                      {/* Subtle Internal Glow on Hover */}
+                      <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-transparent opacity-0 group-hover/play:opacity-100 transition-opacity"></div>
+                      
+                      <IconPlay 
+                        size={24} 
+                        className="text-primary group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(0,219,154,0.5)] transition-all duration-300 relative z-10" 
+                        fill="currentColor" 
+                      />
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
-            <div className="lg:col-span-5 relative flex justify-center lg:justify-end perspective-[1200px]">
-              <div ref={imageContainerRef} className="relative w-full max-w-[420px] aspect-[4/5] animate-zoom-in [animation-delay:600ms] will-change-transform">
-                <div className="w-full h-full rounded-[3.5rem] overflow-hidden border border-white/10 shadow-[0_40px_80px_rgba(0,0,0,0.4)] relative z-10 bg-gray-900 group">
-                  <img src={config?.hero_image_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800'} alt="Md Abdul Hai" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
+
+            {/* Right Image/Visual Column - Interactive Elements Added */}
+            <div className="lg:col-span-5 xl:col-span-6 relative flex justify-center lg:justify-end">
+              <div 
+                ref={imageContainerRef} 
+                className="relative w-full max-w-[460px] aspect-[4/5] animate-zoom-in [animation-delay:600ms] will-change-transform rounded-[4rem] overflow-hidden group cursor-none"
+                style={{
+                  '--spotlight-x': '50%',
+                  '--spotlight-y': '50%'
+                } as React.CSSProperties}
+              >
+                {/* Image Base */}
+                <img 
+                  src={config?.hero_image_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800'} 
+                  alt="Md Abdul Hai" 
+                  className="w-full h-full object-cover transition-transform duration-1000 ease-out" 
+                />
+
+                {/* Interactive Spotlight Shine Overlay */}
+                <div 
+                  className="absolute inset-0 z-20 pointer-events-none transition-opacity duration-500 opacity-0 group-hover:opacity-100"
+                  style={{
+                    background: 'radial-gradient(circle at var(--spotlight-x) var(--spotlight-y), rgba(255, 255, 255, 0.15) 0%, transparent 60%)',
+                    mixBlendMode: 'plus-lighter'
+                  }}
+                ></div>
+
+                {/* Subtle Edge Glow Overlay */}
+                <div className="absolute inset-0 border-[1.5px] border-white/10 rounded-[4rem] pointer-events-none z-30"></div>
+                
+                {/* Floating Experience Badge */}
+                <div className="absolute bottom-10 left-10 p-5 bg-gray-950/80 backdrop-blur-md border border-white/10 rounded-3xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-10 group-hover:translate-y-0 z-40">
+                  <div className="text-2xl font-black text-primary leading-none">5+</div>
+                  <div className="text-[9px] font-black uppercase tracking-widest text-gray-400 mt-1">Years of Impact</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Cinematic Scroll Down Indicator */}
+        <div 
+          onClick={handleScrollDown}
+          className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-3 cursor-pointer group animate-fade-in [animation-delay:1200ms]"
+        >
+          <span className="text-[10px] font-black uppercase tracking-[0.5em] text-gray-500 group-hover:text-primary transition-colors">Scroll</span>
+          <div className="w-px h-12 bg-gradient-to-b from-primary to-transparent relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-full bg-white animate-scroll-line"></div>
+          </div>
+          <IconChevronDown size={16} className="text-primary animate-bounce mt-1" />
+        </div>
       </section>
 
       {/* Why Choose Me Section */}
-      <section className="py-24 relative overflow-hidden">
+      <section id="why-choose-me" className="py-24 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             <div className="text-center md:text-left opacity-0" data-scroll data-scroll-animation="animate-fade-up">

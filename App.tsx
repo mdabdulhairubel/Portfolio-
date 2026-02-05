@@ -12,6 +12,7 @@ import Admin from './pages/Admin.tsx';
 import Chatbot from './components/Chatbot.tsx';
 import CustomCursor from './components/CustomCursor.tsx';
 import WaterCursorEffect from './components/WaterCursorEffect.tsx';
+import ScrollToTopButton from './components/ScrollToTopButton.tsx';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -219,6 +220,7 @@ const App: React.FC = () => {
         <AnimatedRoutes />
         <Footer />
         <Chatbot />
+        <ScrollToTopButton />
       </div>
     </Router>
   );
