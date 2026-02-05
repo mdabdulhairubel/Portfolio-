@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Settings, Briefcase, LayoutGrid, FileText, Image as ImageIcon, 
   MessageSquare, Plus, Trash2, Edit2, LogOut, Save, Loader2, Upload, 
   Youtube, Sparkles, Check, X, Star, Globe, User, Quote, DollarSign,
   MonitorPlay, Camera, CheckSquare, Link as IconLink, Images, Target,
-  Smartphone, Mail, Info, BrainCircuit, StarHalf
+  Smartphone, Mail, Info, BrainCircuit, ListChecks
 } from 'lucide-react';
 import { supabase, uploadFile } from '../supabase.ts';
 import { Service, Project, SiteConfig, Testimonial, BrandLogo, ContactSubmission, PricingPlan } from '../types.ts';
@@ -196,8 +195,9 @@ const Admin: React.FC = () => {
       preparedItem.rating = parseInt(String(preparedItem.rating));
     }
 
+    // Convert comma-separated string back to array if user edited it as text
     if ((activeTab === 'services' || activeTab === 'pricing') && typeof preparedItem.features === 'string') {
-      preparedItem.features = preparedItem.features.split(',').map((f: string) => f.trim());
+      preparedItem.features = preparedItem.features.split(',').map((f: string) => f.trim()).filter((f: string) => f !== '');
     }
 
     const { error } = await supabase.from(table).upsert(preparedItem);
@@ -264,7 +264,7 @@ const Admin: React.FC = () => {
                   } else if (activeTab === 'testimonials') {
                     defaultItem = { name: '', role: 'Client', rating: 5, feedback: '', image_url: '' };
                   } else if (activeTab === 'services' || activeTab === 'pricing') {
-                    defaultItem = { features: [] };
+                    defaultItem = { title: '', price: '', description: '', features: [] };
                   }
                   setEditItem(defaultItem); 
                   setIsModalOpen(true); 
@@ -498,11 +498,47 @@ const Admin: React.FC = () => {
                 </div>
               )}
 
-              {/* Common Title/Name - HIDDEN FOR LOGOS & TESTIMONIALS (handled above) */}
+              {/* Price Field for Services & Pricing */}
+              {(activeTab === 'services' || activeTab === 'pricing') && (
+                <div className="space-y-2">
+                  <label className="text-xs text-gray-500 font-bold uppercase block px-1">Starting Price / Plan Amount</label>
+                  <div className="relative">
+                    <input required className="w-full bg-gray-950 border border-gray-800 rounded-2xl pl-12 pr-5 py-4 text-white outline-none focus:border-primary transition-all" value={editItem.price || ''} onChange={(e) => setEditItem({ ...editItem, price: e.target.value })} placeholder="e.g. $499 or Starting at $250" />
+                    <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700" size={20} />
+                  </div>
+                </div>
+              )}
+
+              {/* Common Title/Name - HIDDEN FOR LOGOS & TESTIMONIALS */}
               {activeTab !== 'logos' && activeTab !== 'testimonials' && (
                 <div className="space-y-2">
                   <label className="text-xs text-gray-500 font-bold uppercase block px-1">Display Title / Name</label>
                   <input required className="w-full bg-gray-950 border border-gray-800 rounded-2xl px-5 py-4 text-white outline-none focus:border-primary transition-all" value={editItem.title || editItem.name || ''} onChange={(e) => setEditItem({ ...editItem, [activeTab === 'testimonials' ? 'name' : 'title']: e.target.value })} />
+                </div>
+              )}
+
+              {/* Feature Points Field - THE MISSING PART */}
+              {(activeTab === 'services' || activeTab === 'pricing') && (
+                <div className="space-y-4 p-6 bg-primary/5 border border-primary/10 rounded-[2rem]">
+                  <div className="flex items-center gap-3">
+                    <ListChecks size={20} className="text-primary" />
+                    <label className="text-sm font-black text-white uppercase tracking-wider">Features / Highlights Checklist</label>
+                  </div>
+                  <p className="text-[10px] text-gray-500 uppercase tracking-widest">Add the bullet points you want to see in the card. Separate each point with a comma.</p>
+                  <textarea 
+                    rows={3} 
+                    className="w-full bg-gray-950 border border-gray-800 rounded-2xl px-5 py-4 text-white outline-none focus:border-primary transition-all resize-none font-medium text-sm" 
+                    value={Array.isArray(editItem.features) ? editItem.features.join(', ') : (editItem.features || '')} 
+                    onChange={(e) => setEditItem({ ...editItem, features: e.target.value })} 
+                    placeholder="e.g. Sound Design, VFX Compositing, Color Grading, 4K Export"
+                  />
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {(Array.isArray(editItem.features) ? editItem.features : (editItem.features?.split(',') || [])).filter((f: string) => f.trim() !== '').map((feat: string, i: number) => (
+                      <span key={i} className="px-3 py-1 bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold rounded-full flex items-center gap-2">
+                        <Check size={10} /> {feat.trim()}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -695,7 +731,7 @@ const Admin: React.FC = () => {
                 </div>
               )}
 
-              <button disabled={saving || uploadingField !== null} type="submit" className="w-full py-5 bg-primary text-gray-950 font-black rounded-2xl hover:bg-primary-hover transition-all flex items-center justify-center gap-3 shadow-xl shadow-primary/20 text-lg uppercase tracking-widest disabled:opacity-50">
+              <button disabled={saving || uploadingField !== null} type="submit" className="w-full py-5 bg-primary text-gray-950 font-black rounded-2xl hover:bg-primary-hover transition-all flex items-center justify-center gap-3 shadow-xl shadow-primary/20 shadow-md text-lg uppercase tracking-widest disabled:opacity-50">
                 {saving ? <Loader2 className="animate-spin" /> : <Save />} 
                 {uploadingField ? 'Processing...' : (editItem.id ? 'Update Item' : 'Publish Item')}
               </button>
