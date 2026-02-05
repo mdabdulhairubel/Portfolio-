@@ -2,6 +2,7 @@
 export interface SiteConfig {
   id?: string;
   hero_title: string;
+  hero_role: string;
   hero_subtitle: string;
   hero_image_url?: string;
   hero_video_url?: string;
@@ -61,6 +62,7 @@ export interface Project {
   type: 'image' | 'video';
   media_url: string;
   thumbnail_url: string;
+  media_gallery?: string[];
   is_featured: boolean;
   created_at: string;
 }

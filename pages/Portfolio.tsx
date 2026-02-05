@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Play, ExternalLink, X, Calendar, Tag, Info, Youtube } from 'lucide-react';
+import { Play, ExternalLink, X, Calendar, Tag, Info, Youtube, Layers, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '../supabase.ts';
 import { Project } from '../types.ts';
 
@@ -8,6 +9,7 @@ const Portfolio: React.FC = () => {
   const [filter, setFilter] = useState<string>('All');
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [activeMedia, setActiveMedia] = useState<{url: string, type: 'image' | 'video'}>({url: '', type: 'image'});
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -29,10 +31,15 @@ const Portfolio: React.FC = () => {
     return (match && match[1]) ? match[1] : null;
   };
 
+  const handleOpenProject = (project: Project) => {
+    setSelectedProject(project);
+    setActiveMedia({ url: project.media_url, type: project.type });
+  };
+
   const categories = ['All', 'Graphic Design', 'Motion Graphics', 'Video Editing', 'CGI Ads'];
   const filteredProjects = filter === 'All' ? projects : projects.filter(p => p.category === filter);
 
-  const activeVideoId = selectedProject?.type === 'video' ? getYouTubeId(selectedProject.media_url) : null;
+  const activeVideoId = activeMedia.type === 'video' ? getYouTubeId(activeMedia.url) : null;
   const embedUrl = activeVideoId ? `https://www.youtube.com/embed/${activeVideoId}?rel=0&modestbranding=1&autoplay=1` : "";
 
   if (loading) return (
@@ -48,11 +55,11 @@ const Portfolio: React.FC = () => {
       
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center mb-16 opacity-0 animate-fade-up">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 tracking-tighter">Work Showcase</h1>
-          <p className="text-gray-400 max-w-2xl mx-auto text-lg font-medium">Explore high-end cinematic visuals and expert design solutions.</p>
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 tracking-tighter text-white">Work Showcase</h1>
+          <p className="text-gray-400 max-w-2xl mx-auto text-lg font-medium">Explore cinematic visuals and high-end design solutions.</p>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-2 mb-16 opacity-0 animate-fade-in delay-200">
+        <div className="flex flex-wrap justify-center gap-2 mb-16 opacity-0 animate-fade-in">
           {categories.map((cat) => (
             <button 
               key={cat} 
@@ -68,13 +75,12 @@ const Portfolio: React.FC = () => {
           ))}
         </div>
 
-        {/* Updated Grid: 4 columns on large desktops, reduced roundness to xl for a cleaner look */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredProjects.map((project, idx) => (
             <div 
               key={project.id} 
-              onClick={() => setSelectedProject(project)}
-              className="group relative bg-gray-900 rounded-xl overflow-hidden border border-gray-800 hover:border-primary transition-all duration-500 opacity-0 animate-zoom-in shadow-xl cursor-pointer" 
+              onClick={() => handleOpenProject(project)}
+              className="group relative bg-gray-900 rounded-2xl overflow-hidden border border-gray-800 hover:border-primary transition-all duration-500 opacity-0 animate-zoom-in shadow-xl cursor-pointer" 
               style={{ animationDelay: `${(idx % 8) * 100}ms` }}
             >
               <div className="relative aspect-video overflow-hidden">
@@ -84,10 +90,16 @@ const Portfolio: React.FC = () => {
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
                 />
                 
-                {/* Minimalist Hover Overlay for title and category */}
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-950/95 via-gray-950/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-5 translate-y-2 group-hover:translate-y-0">
-                  <span className="text-primary font-black text-[9px] uppercase tracking-[0.2em] mb-1">{project.category}</span>
-                  <h3 className="text-sm font-bold text-white leading-tight line-clamp-2">{project.title}</h3>
+                {/* Gallery Indicator */}
+                {project.media_gallery && project.media_gallery.length > 0 && (
+                  <div className="absolute top-4 right-4 px-3 py-1 bg-gray-950/80 backdrop-blur-md rounded-full text-white text-[9px] font-black uppercase flex items-center gap-2 border border-white/10 z-20">
+                    <Layers size={10} className="text-primary" /> {project.media_gallery.length + 1} Shots
+                  </div>
+                )}
+
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-6">
+                  <span className="text-primary font-black text-[10px] uppercase tracking-[0.3em] mb-2">{project.category}</span>
+                  <h3 className="text-lg font-bold text-white leading-tight line-clamp-2">{project.title}</h3>
                 </div>
               </div>
             </div>
@@ -101,20 +113,20 @@ const Portfolio: React.FC = () => {
         )}
       </div>
 
-      {/* Project Detail Pop-up Modal */}
+      {/* Project Detail Modal */}
       {selectedProject && (
-        <div className="fixed inset-0 z-[100] bg-gray-950/95 flex items-center justify-center p-4 md:p-8 animate-fade-in backdrop-blur-md overflow-y-auto custom-scrollbar">
-          <div className="relative w-full max-w-5xl bg-gray-900 rounded-2xl border border-gray-800 shadow-2xl overflow-hidden animate-zoom-in flex flex-col lg:flex-row max-h-[90vh]">
+        <div className="fixed inset-0 z-[100] bg-gray-950/98 flex items-center justify-center p-4 md:p-8 animate-fade-in backdrop-blur-md overflow-y-auto custom-scrollbar">
+          <div className="relative w-full max-w-6xl bg-gray-900 rounded-[2.5rem] border border-gray-800 shadow-2xl overflow-hidden animate-zoom-in flex flex-col lg:flex-row max-h-[92vh]">
             <button 
               onClick={() => setSelectedProject(null)} 
-              className="absolute top-4 right-4 text-gray-400 hover:text-primary transition-all p-2 bg-gray-950/50 border border-gray-800 rounded-xl z-[110]"
+              className="absolute top-6 right-6 text-gray-400 hover:text-white transition-all p-3 bg-gray-950/80 backdrop-blur-md border border-gray-800 rounded-2xl z-[110] hover:scale-110"
             >
               <X size={20} />
             </button>
             
-            {/* Media Section */}
-            <div className="w-full lg:w-[60%] bg-black flex items-center justify-center relative min-h-[300px] lg:min-h-0">
-              {selectedProject.type === 'video' ? (
+            {/* Media Section (The Box) */}
+            <div className="w-full lg:w-[65%] bg-black flex items-center justify-center relative min-h-[350px] lg:min-h-0 overflow-hidden">
+              {activeMedia.type === 'video' ? (
                 activeVideoId ? (
                   <iframe 
                     width="100%"
@@ -128,55 +140,85 @@ const Portfolio: React.FC = () => {
                     allowFullScreen
                   ></iframe>
                 ) : (
-                  <video src={selectedProject.media_url} controls autoPlay className="w-full h-full object-contain"></video>
+                  <video src={activeMedia.url} controls autoPlay className="w-full h-full object-contain"></video>
                 )
               ) : (
-                <img src={selectedProject.media_url} alt={selectedProject.title} className="w-full h-full object-contain" />
+                <img key={activeMedia.url} src={activeMedia.url} alt={selectedProject.title} className="w-full h-full object-contain animate-fade-in" />
               )}
             </div>
 
             {/* Info Section */}
-            <div className="w-full lg:w-[40%] p-6 md:p-10 flex flex-col h-full bg-gray-900 border-l border-gray-800 overflow-y-auto custom-scrollbar">
-              <div className="flex items-center gap-2 text-primary text-[10px] font-black uppercase tracking-[0.2em] mb-3">
-                <Tag size={12} /> {selectedProject.category}
+            <div className="w-full lg:w-[35%] p-8 md:p-12 flex flex-col h-full bg-gray-900 border-l border-gray-800 overflow-y-auto custom-scrollbar">
+              <div className="flex items-center gap-3 text-primary text-[10px] font-black uppercase tracking-[0.3em] mb-4">
+                <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+                {selectedProject.category}
               </div>
-              <h2 className="text-2xl md:text-3xl font-bold text-white mb-6 tracking-tighter leading-tight">
+              <h2 className="text-3xl font-bold text-white mb-6 tracking-tighter leading-[1.1]">
                 {selectedProject.title}
               </h2>
               
-              <div className="flex flex-wrap items-center gap-4 text-[11px] font-bold text-gray-500 mb-8 pb-6 border-b border-gray-800">
-                <div className="flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-5 text-[11px] font-bold text-gray-500 mb-8 pb-8 border-b border-gray-800">
+                <div className="flex items-center gap-2 bg-gray-950 px-3 py-1.5 rounded-full border border-gray-800">
                   <Calendar size={14} className="text-primary" />
                   {new Date(selectedProject.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long' })}
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2 bg-gray-950 px-3 py-1.5 rounded-full border border-gray-800 uppercase">
                   <Info size={14} className="text-primary" />
-                  {selectedProject.type.toUpperCase()}
+                  {selectedProject.type}
                 </div>
               </div>
 
+              {/* Gallery Section - MOVED TO ABOVE NARRATIVE */}
+              {((selectedProject.media_gallery && selectedProject.media_gallery.length > 0) || true) && (
+                <div className="mb-10 space-y-4">
+                   <h4 className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                     <Layers size={14} /> Process & Detail Shots
+                   </h4>
+                   <div className="grid grid-cols-3 gap-3">
+                      {/* Always include the main media as a switchable option if it's an image */}
+                      <button 
+                        onClick={() => setActiveMedia({ url: selectedProject.media_url, type: selectedProject.type })}
+                        className={`aspect-square rounded-xl overflow-hidden border transition-all group relative ${activeMedia.url === selectedProject.media_url ? 'border-primary ring-2 ring-primary/20' : 'border-gray-800 hover:border-primary/50'}`}
+                      >
+                         <img src={selectedProject.thumbnail_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                         {selectedProject.type === 'video' && (
+                           <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                             <Play size={16} fill="white" className="text-white" />
+                           </div>
+                         )}
+                      </button>
+
+                      {selectedProject.media_gallery?.map((url, i) => (
+                        <button 
+                          key={i} 
+                          onClick={() => setActiveMedia({ url, type: 'image' })}
+                          className={`aspect-square rounded-xl overflow-hidden border transition-all group ${activeMedia.url === url ? 'border-primary ring-2 ring-primary/20' : 'border-gray-800 hover:border-primary/50'}`}
+                        >
+                           <img src={url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                        </button>
+                      ))}
+                   </div>
+                </div>
+              )}
+
+              {/* Project Narrative */}
               <div className="mb-10 flex-grow">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-4">Project Narrative</h4>
                 <p className="text-gray-400 leading-relaxed text-sm font-medium">
-                  {selectedProject.description || "Detailed case study of the creative process and execution for this " + selectedProject.category.toLowerCase() + " project. Focus on visual impact and narrative precision."}
+                  {selectedProject.description || "A showcase of high-end visual storytelling, focusing on cinematic impact and brand narrative."}
                 </p>
               </div>
 
-              <div className="mt-auto space-y-3">
+              <div className="mt-auto pt-8 border-t border-gray-800 space-y-4">
                 <a 
                   href={selectedProject.media_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full py-3.5 bg-primary text-gray-950 font-black rounded-xl flex items-center justify-center gap-2 hover:bg-primary-hover transition-all shadow-xl shadow-primary/20"
+                  className="w-full py-4 bg-primary text-gray-950 font-black rounded-2xl flex items-center justify-center gap-3 hover:bg-primary-hover transition-all shadow-xl shadow-primary/20"
                 >
-                  {selectedProject.type === 'video' ? <Youtube size={20} /> : <ExternalLink size={20} />}
-                  {selectedProject.type === 'video' ? 'Watch Full Project' : 'Open Full Image'}
+                  {selectedProject.type === 'video' ? <Youtube size={22} /> : <ExternalLink size={22} />}
+                  View Full Output
                 </a>
-                <button 
-                  onClick={() => setSelectedProject(null)}
-                  className="w-full py-3.5 bg-gray-800 text-white font-black rounded-xl flex items-center justify-center gap-2 hover:bg-gray-700 transition-all border border-gray-700"
-                >
-                  Back to Showcase
-                </button>
               </div>
             </div>
           </div>
