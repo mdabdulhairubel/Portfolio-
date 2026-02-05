@@ -1,6 +1,5 @@
-
-import React, { useState, useEffect } from 'react';
-import { Play, ExternalLink, X, Calendar, Tag, Info, Youtube, Layers, Image as ImageIcon } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Play, ExternalLink, X, Calendar, Tag, Info, Youtube, Layers, Maximize } from 'lucide-react';
 import { supabase } from '../supabase.ts';
 import { Project } from '../types.ts';
 
@@ -10,6 +9,7 @@ const Portfolio: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [activeMedia, setActiveMedia] = useState<{url: string, type: 'image' | 'video'}>({url: '', type: 'image'});
+  const mediaContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -34,6 +34,27 @@ const Portfolio: React.FC = () => {
   const handleOpenProject = (project: Project) => {
     setSelectedProject(project);
     setActiveMedia({ url: project.media_url, type: project.type });
+  };
+
+  const handleFullscreen = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (mediaContainerRef.current) {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else {
+        mediaContainerRef.current.requestFullscreen().catch(err => {
+          console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+        });
+      }
+    }
+  };
+
+  const handleMediaContainerClick = (e: React.MouseEvent) => {
+    // If we're in fullscreen and the user clicks the background area (the container itself)
+    // rather than the image, exit fullscreen mode.
+    if (document.fullscreenElement && e.target === mediaContainerRef.current) {
+      document.exitFullscreen();
+    }
   };
 
   const categories = ['All', 'Graphic Design', 'Motion Graphics', 'Video Editing', 'CGI Ads'];
@@ -80,7 +101,7 @@ const Portfolio: React.FC = () => {
             <div 
               key={project.id} 
               onClick={() => handleOpenProject(project)}
-              className="group relative bg-gray-900 rounded-2xl overflow-hidden border border-gray-800 hover:border-primary transition-all duration-500 opacity-0 animate-zoom-in shadow-xl cursor-pointer" 
+              className="group relative bg-gray-950 rounded-2xl overflow-hidden border border-gray-800 hover:border-primary transition-all duration-500 opacity-0 animate-zoom-in shadow-xl cursor-pointer" 
               style={{ animationDelay: `${(idx % 8) * 100}ms` }}
             >
               <div className="relative aspect-video overflow-hidden">
@@ -125,7 +146,11 @@ const Portfolio: React.FC = () => {
             </button>
             
             {/* Media Section (The Box) */}
-            <div className="w-full lg:w-[65%] bg-black flex items-center justify-center relative min-h-[350px] lg:min-h-0 overflow-hidden">
+            <div 
+              ref={mediaContainerRef} 
+              onClick={handleMediaContainerClick}
+              className="w-full lg:w-[65%] bg-black flex items-center justify-center relative min-h-[350px] lg:min-h-0 overflow-hidden group/media cursor-default"
+            >
               {activeMedia.type === 'video' ? (
                 activeVideoId ? (
                   <iframe 
@@ -143,7 +168,25 @@ const Portfolio: React.FC = () => {
                   <video src={activeMedia.url} controls autoPlay className="w-full h-full object-contain"></video>
                 )
               ) : (
-                <img key={activeMedia.url} src={activeMedia.url} alt={selectedProject.title} className="w-full h-full object-contain animate-fade-in" />
+                <>
+                  <img 
+                    key={activeMedia.url} 
+                    src={activeMedia.url} 
+                    alt={selectedProject.title} 
+                    className="w-full h-full object-contain animate-fade-in pointer-events-auto" 
+                  />
+                  
+                  {/* Full Screen Button - Specific for Image View as requested */}
+                  <div className="absolute bottom-6 right-6 opacity-0 group-hover/media:opacity-100 transition-all z-20">
+                    <button 
+                      onClick={handleFullscreen}
+                      className="flex items-center gap-2 px-4 py-2.5 bg-gray-950/80 backdrop-blur-md border border-gray-800 rounded-xl text-white font-bold hover:bg-primary hover:text-gray-950 transition-all shadow-2xl group/fs-btn"
+                    >
+                      <Maximize size={16} className="group-hover/fs-btn:scale-110 transition-transform" />
+                      <span className="text-[10px] font-black uppercase tracking-[0.2em]">Fullscreen</span>
+                    </button>
+                  </div>
+                </>
               )}
             </div>
 
@@ -168,14 +211,13 @@ const Portfolio: React.FC = () => {
                 </div>
               </div>
 
-              {/* Gallery Section - MOVED TO ABOVE NARRATIVE */}
+              {/* Gallery Section */}
               {((selectedProject.media_gallery && selectedProject.media_gallery.length > 0) || true) && (
                 <div className="mb-10 space-y-4">
                    <h4 className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
                      <Layers size={14} /> Process & Detail Shots
                    </h4>
                    <div className="grid grid-cols-3 gap-3">
-                      {/* Always include the main media as a switchable option if it's an image */}
                       <button 
                         onClick={() => setActiveMedia({ url: selectedProject.media_url, type: selectedProject.type })}
                         className={`aspect-square rounded-xl overflow-hidden border transition-all group relative ${activeMedia.url === selectedProject.media_url ? 'border-primary ring-2 ring-primary/20' : 'border-gray-800 hover:border-primary/50'}`}

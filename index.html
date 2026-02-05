@@ -74,7 +74,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
       @media (min-width: 1024px) {
-        body, a, button, input, textarea, select {
+        /* Fix: Use :not(:fullscreen) to ensure the native cursor returns when an element (like an image) is expanded to full screen */
+        html:not(:fullscreen) body, 
+        html:not(:fullscreen) a, 
+        html:not(:fullscreen) button, 
+        html:not(:fullscreen) input, 
+        html:not(:fullscreen) textarea, 
+        html:not(:fullscreen) select {
           cursor: none !important;
         }
       }
