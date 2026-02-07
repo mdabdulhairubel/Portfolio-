@@ -1,7 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Play, ExternalLink, X, Calendar, Tag, Info, Youtube, Layers, Maximize } from 'lucide-react';
 import { supabase } from '../supabase.ts';
 import { Project } from '../types.ts';
+
+/**
+ * Utility to optimize Supabase URLs using their built-in image transformation service.
+ * Rewrites /object/public/ to /render/image/public/ and appends resizing params.
+ */
+const getOptimizedUrl = (url: string, width: number = 800, quality: number = 80) => {
+  if (!url || !url.includes('supabase.co') || !url.includes('/object/public/')) return url;
+  return url
+    .replace('/object/public/', '/render/image/public/')
+    .concat(`?width=${width}&quality=${quality}`);
+};
 
 const Portfolio: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -9,6 +21,7 @@ const Portfolio: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [activeMedia, setActiveMedia] = useState<{url: string, type: 'image' | 'video'}>({url: '', type: 'image'});
+  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
   const mediaContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -19,6 +32,22 @@ const Portfolio: React.FC = () => {
     };
     fetchProjects();
   }, []);
+
+  // Body Scroll Lock logic
+  useEffect(() => {
+    if (selectedProject) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [selectedProject]);
+
+  const handleImageLoad = (id: string) => {
+    setLoadedImages(prev => ({ ...prev, [id]: true }));
+  };
 
   const getYouTubeId = (input: string) => {
     if (!input) return null;
@@ -50,8 +79,6 @@ const Portfolio: React.FC = () => {
   };
 
   const handleMediaContainerClick = (e: React.MouseEvent) => {
-    // If we're in fullscreen and the user clicks the background area (the container itself)
-    // rather than the image, exit fullscreen mode.
     if (document.fullscreenElement && e.target === mediaContainerRef.current) {
       document.exitFullscreen();
     }
@@ -70,8 +97,7 @@ const Portfolio: React.FC = () => {
   );
 
   return (
-    <div className="py-24 relative overflow-hidden">
-      {/* Texture Layer */}
+    <div className="py-24 relative overflow-hidden animate-fade-in">
       <div className="absolute top-0 left-0 w-full h-[500px] bg-grid-subtle opacity-40 pointer-events-none"></div>
       
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -97,34 +123,41 @@ const Portfolio: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredProjects.map((project, idx) => (
-            <div 
-              key={project.id} 
-              onClick={() => handleOpenProject(project)}
-              className="group relative bg-gray-950 rounded-2xl overflow-hidden border border-gray-800 hover:border-primary transition-all duration-500 opacity-0 animate-zoom-in shadow-xl cursor-pointer" 
-              style={{ animationDelay: `${(idx % 8) * 100}ms` }}
-            >
-              <div className="relative aspect-video overflow-hidden">
-                <img 
-                  src={project.thumbnail_url} 
-                  alt={project.title} 
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
-                />
-                
-                {/* Gallery Indicator */}
-                {project.media_gallery && project.media_gallery.length > 0 && (
-                  <div className="absolute top-4 right-4 px-3 py-1 bg-gray-950/80 backdrop-blur-md rounded-full text-white text-[9px] font-black uppercase flex items-center gap-2 border border-white/10 z-20">
-                    <Layers size={10} className="text-primary" /> {project.media_gallery.length + 1} Shots
-                  </div>
-                )}
+          {filteredProjects.map((project, idx) => {
+            const isPriority = idx < 4;
+            const thumbOptimized = getOptimizedUrl(project.thumbnail_url, 600, 75);
+            
+            return (
+              <div 
+                key={project.id} 
+                onClick={() => handleOpenProject(project)}
+                className="group relative bg-gray-950 rounded-xl overflow-hidden border border-gray-800 hover:border-primary transition-all duration-500 opacity-0 animate-zoom-in shadow-xl cursor-pointer" 
+                style={{ animationDelay: `${(idx % 8) * 100}ms` }}
+              >
+                <div className={`relative aspect-video overflow-hidden ${!loadedImages[project.id] ? 'animate-shimmer-bg animate-shimmer' : ''}`}>
+                  <img 
+                    src={thumbOptimized} 
+                    alt={project.title} 
+                    loading={isPriority ? "eager" : "lazy"}
+                    decoding="async"
+                    onLoad={() => handleImageLoad(project.id)}
+                    className={`w-full h-full object-cover transition-all duration-700 will-change-transform ${loadedImages[project.id] ? 'opacity-100 scale-100 blur-0' : 'opacity-0 scale-105 blur-md'}`} 
+                  />
+                  
+                  {project.media_gallery && project.media_gallery.length > 0 && (
+                    <div className="absolute top-4 right-4 px-3 py-1 bg-gray-950/80 backdrop-blur-md rounded-full text-white text-[9px] font-black uppercase flex items-center gap-2 border border-white/10 z-20">
+                      <Layers size={10} className="text-primary" /> {project.media_gallery.length + 1} Shots
+                    </div>
+                  )}
 
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-6">
-                  <span className="text-primary font-black text-[10px] uppercase tracking-[0.3em] mb-2">{project.category}</span>
-                  <h3 className="text-lg font-bold text-white leading-tight line-clamp-2">{project.title}</h3>
+                  <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-6">
+                    <span className="text-primary font-black text-[10px] uppercase tracking-[0.3em] mb-2">{project.category}</span>
+                    <h3 className="text-lg font-bold text-white leading-tight line-clamp-2">{project.title}</h3>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         
         {filteredProjects.length === 0 && (
@@ -134,22 +167,21 @@ const Portfolio: React.FC = () => {
         )}
       </div>
 
-      {/* Project Detail Modal */}
-      {selectedProject && (
-        <div className="fixed inset-0 z-[100] bg-gray-950/98 flex items-center justify-center p-4 md:p-8 animate-fade-in backdrop-blur-md overflow-y-auto custom-scrollbar">
-          <div className="relative w-full max-w-6xl bg-gray-900 rounded-[2.5rem] border border-gray-800 shadow-2xl overflow-hidden animate-zoom-in flex flex-col lg:flex-row max-h-[92vh]">
+      {/* Project Detail Modal - Teleported to end of body via Portal */}
+      {selectedProject && createPortal(
+        <div className="fixed inset-0 z-[200] bg-gray-950/98 flex items-center justify-center p-4 md:p-8 animate-fade-in backdrop-blur-md overflow-y-auto custom-scrollbar">
+          <div className="relative w-full max-w-6xl bg-gray-900 rounded-xl border border-gray-800 shadow-2xl overflow-hidden animate-zoom-in flex flex-col lg:flex-row max-h-[92vh]">
             <button 
               onClick={() => setSelectedProject(null)} 
-              className="absolute top-6 right-6 text-gray-400 hover:text-white transition-all p-3 bg-gray-950/80 backdrop-blur-md border border-gray-800 rounded-2xl z-[110] hover:scale-110"
+              className="absolute top-6 right-6 text-gray-400 hover:text-white transition-all p-3 bg-gray-950/80 backdrop-blur-md border border-gray-800 rounded-xl z-[210] hover:scale-110 transition-transform"
             >
               <X size={20} />
             </button>
             
-            {/* Media Section (The Box) */}
             <div 
               ref={mediaContainerRef} 
               onClick={handleMediaContainerClick}
-              className="w-full lg:w-[65%] bg-black flex items-center justify-center relative min-h-[350px] lg:min-h-0 overflow-hidden group/media cursor-default"
+              className={`w-full lg:w-[65%] bg-black flex items-center justify-center relative min-h-[350px] lg:min-h-0 overflow-hidden group/media cursor-default ${activeMedia.type === 'image' && !loadedImages[activeMedia.url] ? 'animate-shimmer-bg animate-shimmer' : ''}`}
             >
               {activeMedia.type === 'video' ? (
                 activeVideoId ? (
@@ -171,12 +203,13 @@ const Portfolio: React.FC = () => {
                 <>
                   <img 
                     key={activeMedia.url} 
-                    src={activeMedia.url} 
+                    src={getOptimizedUrl(activeMedia.url, 1600, 85)} 
                     alt={selectedProject.title} 
-                    className="w-full h-full object-contain animate-fade-in pointer-events-auto" 
+                    onLoad={() => handleImageLoad(activeMedia.url)}
+                    decoding="async"
+                    className={`w-full h-full object-contain animate-fade-in pointer-events-auto transition-all duration-500 ${loadedImages[activeMedia.url] ? 'opacity-100 blur-0' : 'opacity-0 blur-lg'}`} 
                   />
                   
-                  {/* Full Screen Button - Specific for Image View as requested */}
                   <div className="absolute bottom-6 right-6 opacity-0 group-hover/media:opacity-100 transition-all z-20">
                     <button 
                       onClick={handleFullscreen}
@@ -190,7 +223,6 @@ const Portfolio: React.FC = () => {
               )}
             </div>
 
-            {/* Info Section */}
             <div className="w-full lg:w-[35%] p-8 md:p-12 flex flex-col h-full bg-gray-900 border-l border-gray-800 overflow-y-auto custom-scrollbar">
               <div className="flex items-center gap-3 text-primary text-[10px] font-black uppercase tracking-[0.3em] mb-4">
                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
@@ -211,39 +243,43 @@ const Portfolio: React.FC = () => {
                 </div>
               </div>
 
-              {/* Gallery Section */}
-              {((selectedProject.media_gallery && selectedProject.media_gallery.length > 0) || true) && (
-                <div className="mb-10 space-y-4">
-                   <h4 className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                     <Layers size={14} /> Process & Detail Shots
-                   </h4>
-                   <div className="grid grid-cols-3 gap-3">
+              <div className="mb-10 space-y-4">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                  <Layers size={14} /> Process & Detail Shots
+                </h4>
+                <div className="grid grid-cols-3 gap-3">
+                    <button 
+                      onClick={() => setActiveMedia({ url: selectedProject.media_url, type: selectedProject.type })}
+                      className={`aspect-square rounded-xl overflow-hidden border transition-all group relative ${activeMedia.url === selectedProject.media_url ? 'border-primary ring-2 ring-primary/20' : 'border-gray-800 hover:border-primary/50'} ${!loadedImages[selectedProject.thumbnail_url] ? 'animate-shimmer-bg animate-shimmer' : ''}`}
+                    >
+                        <img 
+                          src={getOptimizedUrl(selectedProject.thumbnail_url, 300, 70)} 
+                          onLoad={() => handleImageLoad(selectedProject.thumbnail_url)}
+                          className={`w-full h-full object-cover group-hover:scale-110 transition-all duration-500 ${loadedImages[selectedProject.thumbnail_url] ? 'opacity-100' : 'opacity-0'}`} 
+                        />
+                        {selectedProject.type === 'video' && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                            <Play size={16} fill="white" className="text-white" />
+                          </div>
+                        )}
+                    </button>
+
+                    {selectedProject.media_gallery?.map((url, i) => (
                       <button 
-                        onClick={() => setActiveMedia({ url: selectedProject.media_url, type: selectedProject.type })}
-                        className={`aspect-square rounded-xl overflow-hidden border transition-all group relative ${activeMedia.url === selectedProject.media_url ? 'border-primary ring-2 ring-primary/20' : 'border-gray-800 hover:border-primary/50'}`}
+                        key={i} 
+                        onClick={() => setActiveMedia({ url, type: 'image' })}
+                        className={`aspect-square rounded-xl overflow-hidden border transition-all group relative ${activeMedia.url === url ? 'border-primary ring-2 ring-primary/20' : 'border-gray-800 hover:border-primary/50'} ${!loadedImages[url] ? 'animate-shimmer-bg animate-shimmer' : ''}`}
                       >
-                         <img src={selectedProject.thumbnail_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                         {selectedProject.type === 'video' && (
-                           <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                             <Play size={16} fill="white" className="text-white" />
-                           </div>
-                         )}
+                          <img 
+                            src={getOptimizedUrl(url, 300, 70)} 
+                            onLoad={() => handleImageLoad(url)}
+                            className={`w-full h-full object-cover group-hover:scale-110 transition-all duration-500 ${loadedImages[url] ? 'opacity-100' : 'opacity-0'}`} 
+                          />
                       </button>
-
-                      {selectedProject.media_gallery?.map((url, i) => (
-                        <button 
-                          key={i} 
-                          onClick={() => setActiveMedia({ url, type: 'image' })}
-                          className={`aspect-square rounded-xl overflow-hidden border transition-all group ${activeMedia.url === url ? 'border-primary ring-2 ring-primary/20' : 'border-gray-800 hover:border-primary/50'}`}
-                        >
-                           <img src={url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                        </button>
-                      ))}
-                   </div>
+                    ))}
                 </div>
-              )}
+              </div>
 
-              {/* Project Narrative */}
               <div className="mb-10 flex-grow">
                 <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-4">Project Narrative</h4>
                 <p className="text-gray-400 leading-relaxed text-sm font-medium">
@@ -256,7 +292,7 @@ const Portfolio: React.FC = () => {
                   href={selectedProject.media_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full py-4 bg-primary text-gray-950 font-black rounded-2xl flex items-center justify-center gap-3 hover:bg-primary-hover transition-all shadow-xl shadow-primary/20"
+                  className="w-full py-4 bg-primary text-gray-950 font-black rounded-xl flex items-center justify-center gap-3 hover:bg-primary-hover transition-all shadow-xl shadow-primary/20"
                 >
                   {selectedProject.type === 'video' ? <Youtube size={22} /> : <ExternalLink size={22} />}
                   View Full Output
@@ -264,7 +300,8 @@ const Portfolio: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

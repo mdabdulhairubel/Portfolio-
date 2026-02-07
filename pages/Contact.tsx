@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Send, Mail, Phone, MapPin, CheckCircle2, Loader2, MessageSquare } from 'lucide-react';
 import { supabase } from '../supabase.ts';
@@ -24,7 +23,7 @@ const Contact: React.FC = () => {
   };
 
   return (
-    <div className="py-24 overflow-hidden">
+    <div className="py-24 overflow-hidden animate-fade-in">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-20 opacity-0 animate-fade-up">
           <h1 className="text-4xl md:text-6xl font-bold mb-6">Let's Create Magic</h1>

@@ -24,7 +24,7 @@ const Services: React.FC = () => {
   );
 
   return (
-    <div className="py-24 relative overflow-hidden">
+    <div className="py-24 relative overflow-hidden animate-fade-in">
       {/* Background Grid */}
       <div className="absolute inset-0 bg-grid-subtle opacity-20 pointer-events-none"></div>
 

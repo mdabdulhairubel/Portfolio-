@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { 
   ChevronRight as IconChevron, Play as IconPlay, ArrowRight as IconArrow, 
@@ -9,10 +10,32 @@ import {
   ExternalLink as IconExternal, Calendar as IconCalendar, 
   Info as IconInfo, Target as IconTarget, Zap as IconZap, 
   Heart as IconHeart, Award as IconAward, Quote as IconQuote,
-  ChevronDown as IconChevronDown
+  ChevronDown as IconChevronDown,
+  Activity, Award as AwardIcon, Heart as HeartIcon, Zap as ZapIcon, 
+  Star as StarIcon, Shield, Sparkles as SparklesIcon, Target as TargetIcon
 } from 'lucide-react';
 import { supabase } from '../supabase.ts';
 import { Service, Project, SiteConfig, Testimonial, BrandLogo, PricingPlan } from '../types.ts';
+
+// Helper for optimized image URLs
+const getOptimizedUrl = (url: string, width: number = 800, quality: number = 80) => {
+  if (!url || !url.includes('supabase.co') || !url.includes('/object/public/')) return url;
+  return url
+    .replace('/object/public/', '/render/image/public/')
+    .concat(`?width=${width}&quality=${quality}`);
+};
+
+// Dynamic Icon Mapper
+const IconMap: Record<string, any> = {
+  Zap: ZapIcon,
+  Heart: HeartIcon,
+  Award: AwardIcon,
+  Target: TargetIcon,
+  Activity: Activity,
+  Star: StarIcon,
+  Shield: Shield,
+  Sparkles: SparklesIcon
+};
 
 const Home: React.FC = () => {
   const [config, setConfig] = useState<SiteConfig | null>(null);
@@ -21,10 +44,14 @@ const Home: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [logos, setLogos] = useState<BrandLogo[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [highlights, setHighlights] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isHeroModalOpen, setIsHeroModalOpen] = useState(false);
   const [contactSuccess, setContactSuccess] = useState(false);
   const [contactLoading, setContactLoading] = useState(false);
+  
+  // Image Loading States
+  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
 
   // Project Modal State
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -45,14 +72,16 @@ const Home: React.FC = () => {
           priceRes,
           projRes,
           logoRes,
-          testRes
+          testRes,
+          highRes
         ] = await Promise.all([
-          supabase.from('site_config').select('*').limit(1).single(),
+          supabase.from('site_config').select('*').limit(1).maybeSingle(),
           supabase.from('services').select('*').order('created_at', { ascending: true }),
           supabase.from('pricing_plans').select('*').order('created_at', { ascending: true }),
           supabase.from('projects').select('*').eq('is_featured', true).order('created_at', { ascending: false }),
           supabase.from('brand_logos').select('*').order('created_at', { ascending: false }),
-          supabase.from('testimonials').select('*').order('created_at', { ascending: false })
+          supabase.from('testimonials').select('*').order('created_at', { ascending: false }),
+          supabase.from('site_highlights').select('*').order('order_index', { ascending: true })
         ]);
         
         if (configRes.data) setConfig(configRes.data);
@@ -61,6 +90,7 @@ const Home: React.FC = () => {
         if (projRes.data) setProjects(projRes.data);
         if (logoRes.data) setLogos(logoRes.data);
         if (testRes.data) setTestimonials(testRes.data);
+        if (highRes.data) setHighlights(highRes.data);
 
       } catch (err) {
         console.error("Home page fetch error:", err);
@@ -70,6 +100,22 @@ const Home: React.FC = () => {
     };
     fetchData();
   }, []);
+
+  // Body Scroll Lock logic
+  useEffect(() => {
+    if (isHeroModalOpen || selectedProject) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isHeroModalOpen, selectedProject]);
+
+  const handleImageLoad = (id: string) => {
+    setLoadedImages(prev => ({ ...prev, [id]: true }));
+  };
 
   // Parallax & Spotlight Logic
   useEffect(() => {
@@ -98,10 +144,8 @@ const Home: React.FC = () => {
       const x = ((e.clientX - left) / width - 0.5) * 2; 
       const y = ((e.clientY - top) / height - 0.5) * 2;
       
-      // Update tilt targets (increased intensity for more interaction)
       targetRotation.current = { x: -y * 12, y: x * 12, tx: x * 20, ty: y * 20 };
 
-      // Update Spotlight position relative to the image container
       const rect = container.getBoundingClientRect();
       const lx = ((e.clientX - rect.left) / rect.width) * 100;
       const ly = ((e.clientY - rect.top) / rect.height) * 100;
@@ -170,7 +214,7 @@ const Home: React.FC = () => {
   };
 
   const handleScrollDown = () => {
-    const nextSection = document.getElementById('why-choose-me');
+    const nextSection = document.getElementById('services-overview');
     if (nextSection) {
       nextSection.scrollIntoView({ behavior: 'smooth' });
     }
@@ -188,7 +232,7 @@ const Home: React.FC = () => {
   const categories = ['Graphic Design', 'Motion Graphics', 'Video Editing', 'CGI Ads'];
 
   return (
-    <div className="space-y-24 pb-24 overflow-hidden bg-gray-950 min-h-screen">
+    <div className="space-y-24 pb-24 overflow-hidden bg-gray-950 min-h-screen animate-fade-in">
       {/* Hero Section */}
       <section ref={heroRef} className="relative min-h-[100vh] flex items-center pt-24 pb-20 lg:pt-16 lg:pb-32 group/hero overflow-hidden">
         <div className="absolute inset-0 z-0 pointer-events-none">
@@ -241,7 +285,6 @@ const Home: React.FC = () => {
 
                 {heroVideoId && (
                   <div className="relative">
-                    {/* Animated Pulse Background Rings */}
                     <div className="absolute inset-0 rounded-2xl bg-primary/30 animate-ping-slow pointer-events-none"></div>
                     <div className="absolute inset-0 rounded-2xl bg-primary/10 animate-pulse pointer-events-none delay-700"></div>
                     
@@ -249,9 +292,7 @@ const Home: React.FC = () => {
                       onClick={() => setIsHeroModalOpen(true)} 
                       className="relative w-16 h-16 rounded-2xl border border-white/10 hover:border-primary transition-all bg-gray-900/60 backdrop-blur-md flex items-center justify-center group/play shadow-xl overflow-hidden"
                     >
-                      {/* Subtle Internal Glow on Hover */}
                       <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-transparent opacity-0 group-hover/play:opacity-100 transition-opacity"></div>
-                      
                       <IconPlay 
                         size={24} 
                         className="text-primary group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(0,219,154,0.5)] transition-all duration-300 relative z-10" 
@@ -263,24 +304,22 @@ const Home: React.FC = () => {
               </div>
             </div>
 
-            {/* Right Image/Visual Column - Interactive Elements Added */}
             <div className="lg:col-span-5 xl:col-span-6 relative flex justify-center lg:justify-end">
               <div 
                 ref={imageContainerRef} 
-                className="relative w-full max-w-[460px] aspect-[4/5] animate-zoom-in [animation-delay:600ms] will-change-transform rounded-[4rem] overflow-hidden group cursor-none"
+                className={`relative w-full max-w-[460px] aspect-[4/5] animate-zoom-in [animation-delay:600ms] will-change-transform rounded-[4rem] overflow-hidden group cursor-none ${!loadedImages['hero'] ? 'animate-shimmer-bg animate-shimmer' : ''}`}
                 style={{
                   '--spotlight-x': '50%',
                   '--spotlight-y': '50%'
                 } as React.CSSProperties}
               >
-                {/* Image Base */}
                 <img 
-                  src={config?.hero_image_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800'} 
+                  src={getOptimizedUrl(config?.hero_image_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800', 900, 85)} 
                   alt="Md Abdul Hai" 
-                  className="w-full h-full object-cover transition-transform duration-1000 ease-out" 
+                  onLoad={() => handleImageLoad('hero')}
+                  decoding="async"
+                  className={`w-full h-full object-cover transition-all duration-1000 ease-out ${loadedImages['hero'] ? 'opacity-100 scale-100 blur-0' : 'opacity-0 scale-110 blur-md'}`} 
                 />
-
-                {/* Interactive Spotlight Shine Overlay */}
                 <div 
                   className="absolute inset-0 z-20 pointer-events-none transition-opacity duration-500 opacity-0 group-hover:opacity-100"
                   style={{
@@ -288,13 +327,9 @@ const Home: React.FC = () => {
                     mixBlendMode: 'plus-lighter'
                   }}
                 ></div>
-
-                {/* Subtle Edge Glow Overlay */}
                 <div className="absolute inset-0 border-[1.5px] border-white/10 rounded-[4rem] pointer-events-none z-30"></div>
-                
-                {/* Floating Experience Badge */}
                 <div className="absolute bottom-10 left-10 p-5 bg-gray-950/80 backdrop-blur-md border border-white/10 rounded-3xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-10 group-hover:translate-y-0 z-40">
-                  <div className="text-2xl font-black text-primary leading-none">5+</div>
+                  <div className="text-2xl font-black text-primary leading-none">{config?.experience_years || '5'}+</div>
                   <div className="text-[9px] font-black uppercase tracking-widest text-gray-400 mt-1">Years of Impact</div>
                 </div>
               </div>
@@ -302,7 +337,6 @@ const Home: React.FC = () => {
           </div>
         </div>
 
-        {/* Cinematic Scroll Down Indicator */}
         <div 
           onClick={handleScrollDown}
           className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-3 cursor-pointer group animate-fade-in [animation-delay:1200ms]"
@@ -315,37 +349,8 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Why Choose Me Section */}
-      <section id="why-choose-me" className="py-24 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            <div className="text-center md:text-left opacity-0" data-scroll data-scroll-animation="animate-fade-up">
-              <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6 mx-auto md:mx-0">
-                <IconZap size={28} />
-              </div>
-              <h3 className="text-2xl font-bold mb-4">Elite Speed</h3>
-              <p className="text-gray-400">High-performance production pipelines that deliver premium quality at commercial speed.</p>
-            </div>
-            <div className="text-center md:text-left opacity-0" data-scroll data-scroll-animation="animate-fade-up" style={{ transitionDelay: '200ms' }}>
-              <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6 mx-auto md:mx-0">
-                <IconHeart size={28} />
-              </div>
-              <h3 className="text-2xl font-bold mb-4">Creative Vision</h3>
-              <p className="text-gray-400">Beyond just moving pixels—we tell stories that resonate with your global audience.</p>
-            </div>
-            <div className="text-center md:text-left opacity-0" data-scroll data-scroll-animation="animate-fade-up" style={{ transitionDelay: '400ms' }}>
-              <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6 mx-auto md:mx-0">
-                <IconAward size={28} />
-              </div>
-              <h3 className="text-2xl font-bold mb-4">Proven Quality</h3>
-              <p className="text-gray-400">5+ years of delivering high-end visuals for international brands and industry leaders.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Services Overview */}
-      <section className="py-24 bg-gray-900/40 relative">
+      <section id="services-overview" className="py-24 bg-gray-900/40 relative">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16 opacity-0" data-scroll data-scroll-animation="animate-fade-up">
              <span className="text-primary font-black text-[10px] uppercase tracking-[0.4em] mb-4 block">Core Solutions</span>
@@ -353,11 +358,11 @@ const Home: React.FC = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {services.slice(0, 4).map((s) => (
-              <div key={s.id} className="group p-8 bg-gray-950 border border-gray-800 rounded-[2.5rem] hover:border-primary transition-all">
+              <div key={s.id} className="group p-8 bg-gray-950 border border-gray-800 rounded-xl hover:border-primary transition-all">
                 <h4 className="text-xl font-bold text-white mb-4">{s.title}</h4>
                 <p className="text-sm text-gray-500 mb-6 line-clamp-3">{s.description}</p>
                 <ul className="space-y-2">
-                  {s.features.slice(0, 3).map((f, j) => (
+                  {s.features.map((f, j) => (
                     <li key={j} className="flex items-center gap-2 text-xs text-gray-400">
                       <IconCheck size={12} className="text-primary" /> {f}
                     </li>
@@ -387,13 +392,30 @@ const Home: React.FC = () => {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                     {catProjects.map((project) => (
-                      <div key={project.id} onClick={() => { setSelectedProject(project); setActiveMedia({url: project.media_url, type: project.type}); }} className="group relative bg-gray-950 rounded-[2.5rem] overflow-hidden border border-gray-800 hover:border-primary transition-all duration-500 cursor-pointer aspect-video">
-                        <img src={project.thumbnail_url} alt={project.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                      <div key={project.id} onClick={() => { setSelectedProject(project); setActiveMedia({url: project.media_url, type: project.type}); }} className="group relative bg-gray-950 rounded-xl overflow-hidden border border-gray-800 hover:border-primary transition-all duration-500 cursor-pointer aspect-video">
+                        <div className={`w-full h-full relative ${!loadedImages[project.id] ? 'animate-shimmer-bg animate-shimmer' : ''}`}>
+                          <img 
+                            src={getOptimizedUrl(project.thumbnail_url, 600, 75)} 
+                            alt={project.title} 
+                            loading="lazy"
+                            decoding="async"
+                            onLoad={() => handleImageLoad(project.id)}
+                            className={`w-full h-full object-cover transition-all duration-700 group-hover:scale-110 ${loadedImages[project.id] ? 'opacity-100 scale-100 blur-0' : 'opacity-0 scale-110 blur-md'}`} 
+                          />
+                        </div>
                         <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-8">
                           <h3 className="text-xl font-bold text-white leading-tight">{project.title}</h3>
                         </div>
                       </div>
                     ))}
+                  </div>
+                  <div className="mt-12 flex justify-center lg:justify-start">
+                    <Link 
+                      to="/portfolio" 
+                      className="group flex items-center gap-3 text-primary font-black uppercase tracking-[0.3em] text-[11px] hover:text-white transition-all py-3 px-6 bg-gray-900 border border-gray-800 rounded-xl hover:border-primary"
+                    >
+                      Explore {cat} <IconArrow size={14} className="group-hover:translate-x-2 transition-transform" />
+                    </Link>
                   </div>
                 </div>
               );
@@ -401,6 +423,43 @@ const Home: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Dynamic Why Choose Me Section */}
+      {highlights.length > 0 && (
+        <section id="why-choose-me" className="py-32 relative overflow-hidden bg-gray-950">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-primary/5 blur-[120px] rounded-full opacity-30 pointer-events-none"></div>
+          <div className="max-w-7xl mx-auto px-6 relative z-10">
+            <div className="text-center mb-20 opacity-0" data-scroll data-scroll-animation="animate-fade-up">
+               <span className="text-primary font-black text-[10px] uppercase tracking-[0.4em] mb-4 block">The Hai Difference</span>
+               <h2 className="text-4xl md:text-6xl font-bold tracking-tighter">Why Choose Me</h2>
+            </div>
+            
+            <div className={`grid grid-cols-1 ${highlights.length > 3 ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-3'} gap-8`}>
+              {highlights.map((item, idx) => {
+                const Icon = IconMap[item.icon_name] || ZapIcon;
+                return (
+                  <div 
+                    key={item.id} 
+                    className="group relative p-10 bg-gray-900/40 backdrop-blur-md border border-gray-800 rounded-[2rem] hover:border-primary/50 transition-all duration-500 opacity-0" 
+                    data-scroll 
+                    data-scroll-animation="animate-fade-up"
+                    style={{ transitionDelay: `${idx * 150}ms` }}
+                  >
+                    <div className="absolute top-8 right-8 text-white/5 font-black text-6xl group-hover:text-primary/10 transition-colors">
+                      {String(idx + 1).padStart(2, '0')}
+                    </div>
+                    <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-8 group-hover:scale-110 group-hover:bg-primary group-hover:text-gray-950 transition-all">
+                      <Icon size={32} />
+                    </div>
+                    <h3 className="text-2xl font-bold mb-4 text-white group-hover:text-primary transition-colors">{item.title}</h3>
+                    <p className="text-gray-400 leading-relaxed text-sm">{item.description}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Testimonials Section */}
       {testimonials.length > 0 && (
@@ -412,10 +471,10 @@ const Home: React.FC = () => {
              </div>
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {testimonials.map((t) => (
-                   <div key={t.id} className="p-10 bg-gray-950 border border-gray-800 rounded-[3rem] relative opacity-0" data-scroll data-scroll-animation="animate-fade-up">
+                   <div key={t.id} className="p-10 bg-gray-950 border border-gray-800 rounded-xl relative opacity-0" data-scroll data-scroll-animation="animate-fade-up">
                       <IconQuote size={40} className="text-primary/20 absolute top-10 right-10" />
                       <div className="flex items-center gap-4 mb-6">
-                         <img src={t.image_url} alt={t.name} className="w-14 h-14 rounded-full object-cover border border-gray-800" />
+                         <img src={getOptimizedUrl(t.image_url, 100, 70)} alt={t.name} className="w-14 h-14 rounded-full object-cover border border-gray-800" />
                          <div>
                             <h4 className="font-bold text-white">{t.name}</h4>
                             <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{t.role}</p>
@@ -442,7 +501,7 @@ const Home: React.FC = () => {
            </div>
            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {pricingPlans.map((plan) => (
-                <div key={plan.id} className={`p-10 rounded-[3rem] border transition-all duration-500 ${plan.is_popular ? 'bg-gradient-to-br from-gray-900 to-gray-950 border-primary/50 shadow-2xl scale-105 z-10' : 'bg-gray-900/40 border-gray-800'}`}>
+                <div key={plan.id} className={`p-10 rounded-xl border transition-all duration-500 ${plan.is_popular ? 'bg-gradient-to-br from-gray-900 to-gray-950 border-primary/50 shadow-2xl scale-105 z-10' : 'bg-gray-900/40 border-gray-800'}`}>
                   <h3 className="text-xl font-bold text-white mb-2">{plan.title}</h3>
                   <p className="text-gray-500 text-sm mb-6">{plan.description}</p>
                   <div className="text-3xl font-black text-white mb-8">{plan.price}</div>
@@ -453,7 +512,7 @@ const Home: React.FC = () => {
                       </li>
                     ))}
                   </ul>
-                  <a href="#contact-section" className={`block w-full py-4 rounded-2xl text-center font-black text-sm transition-all ${plan.is_popular ? 'bg-primary text-gray-950' : 'bg-white/5 text-white border border-white/10'}`}>
+                  <a href="#contact-section" className={`block w-full py-4 rounded-xl text-center font-black text-sm transition-all ${plan.is_popular ? 'bg-primary text-gray-950' : 'bg-white/5 text-white border border-white/10'}`}>
                     {plan.button_text}
                   </a>
                 </div>
@@ -462,7 +521,7 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Client Logos Marquee - ABOVE CONTACT */}
+      {/* Client Logos Marquee */}
       {logos.length > 0 && (
         <section className="py-20 bg-gray-950/50 border-y border-gray-900 overflow-hidden">
           <div className="max-w-[1440px] mx-auto px-6 mb-10 text-center opacity-0" data-scroll data-scroll-animation="animate-fade-up">
@@ -473,14 +532,14 @@ const Home: React.FC = () => {
               <div className="flex items-center gap-24 px-12">
                 {logos.map((logo) => (
                   <div key={logo.id} className="w-32 md:w-48 h-20 flex items-center justify-center grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-500">
-                    <img src={logo.image_url} alt={logo.name} className="max-w-full max-h-full object-contain" />
+                    <img src={getOptimizedUrl(logo.image_url, 300, 60)} alt={logo.name} className="max-w-full max-h-full object-contain" />
                   </div>
                 ))}
               </div>
               <div className="flex items-center gap-24 px-12">
                 {logos.map((logo) => (
                   <div key={`dup-${logo.id}`} className="w-32 md:w-48 h-20 flex items-center justify-center grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-500">
-                    <img src={logo.image_url} alt={logo.name} className="max-w-full max-h-full object-contain" />
+                    <img src={getOptimizedUrl(logo.image_url, 300, 60)} alt={logo.name} className="max-w-full max-h-full object-contain" />
                   </div>
                 ))}
               </div>
@@ -491,13 +550,13 @@ const Home: React.FC = () => {
 
       {/* Contact Section */}
       <section id="contact-section" className="max-w-7xl mx-auto px-4 py-24 opacity-0" data-scroll data-scroll-animation="animate-fade-up">
-        <div className="bg-gradient-to-br from-gray-900 to-gray-950 border border-gray-800 rounded-[3rem] p-8 md:p-20 relative overflow-hidden">
+        <div className="bg-gradient-to-br from-gray-900 to-gray-950 border border-gray-800 rounded-xl p-8 md:p-20 relative overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center relative z-10">
             <div>
               <h2 className="text-4xl md:text-6xl font-bold mb-8 tracking-tighter">Bring your <span className="text-primary">vision to life.</span></h2>
               <p className="text-gray-400 text-lg mb-12">Discussing creative concepts, budgeting, or just saying hi—my door is always open.</p>
             </div>
-            <form onSubmit={handleContact} className="bg-gray-950/50 p-8 rounded-[2rem] border border-gray-800 space-y-6">
+            <form onSubmit={handleContact} className="bg-gray-950/50 p-8 rounded-xl border border-gray-800 space-y-6">
               {contactSuccess ? (
                 <div className="text-center py-10">
                   <IconCheckCircle size={32} className="text-primary mx-auto mb-6" />
@@ -506,7 +565,7 @@ const Home: React.FC = () => {
               ) : (
                 <>
                   <input name="name" required placeholder="Name" className="w-full bg-gray-900 border border-gray-800 rounded-xl px-5 py-4 text-white outline-none focus:border-primary" />
-                  <input name="email" type="email" required placeholder="Email" className="w-full bg-gray-900 border border-gray-800 rounded-xl px-5 py-4 text-white outline-none focus:border-primary" />
+                  <input name="email" type="email" required placeholder="Email" className="w-full bg-gray-950 border border-gray-800 rounded-xl px-5 py-4 text-white outline-none focus:border-primary" />
                   <textarea name="message" required rows={4} placeholder="What are we creating?" className="w-full bg-gray-950 border border-gray-800 rounded-xl px-5 py-4 text-white outline-none focus:border-primary resize-none"></textarea>
                   <button disabled={contactLoading} type="submit" className="w-full py-4 bg-primary text-gray-950 font-black rounded-xl hover:bg-primary-hover transition-all flex items-center justify-center gap-3">
                     {contactLoading ? <IconLoader className="animate-spin" /> : <IconSend />} Submit Inquiry
@@ -518,26 +577,32 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Hero Video Modal */}
-      {isHeroModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-950/98 backdrop-blur-md animate-fade-in">
-          <button onClick={() => setIsHeroModalOpen(false)} className="absolute top-8 right-8 text-white z-[110]"><IconX size={40} /></button>
-          <div className="w-full max-w-6xl aspect-video rounded-3xl overflow-hidden bg-black shadow-2xl border border-white/10">
+      {/* Hero Video Modal - Using Portal */}
+      {isHeroModalOpen && createPortal(
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-gray-950/98 backdrop-blur-md animate-fade-in">
+          <button onClick={() => setIsHeroModalOpen(false)} className="absolute top-8 right-8 text-white z-[210] hover:scale-110 transition-transform"><IconX size={40} /></button>
+          <div className="w-full max-w-6xl aspect-video rounded-xl overflow-hidden bg-black shadow-2xl border border-white/10">
             <iframe width="100%" height="100%" src={heroEmbedUrl} title="Showreel" frameBorder="0" allowFullScreen></iframe>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Project Detail Modal */}
-      {selectedProject && (
-        <div className="fixed inset-0 z-[100] bg-gray-950/98 flex items-center justify-center p-4 md:p-8 backdrop-blur-md overflow-y-auto">
-          <div className="relative w-full max-w-6xl bg-gray-900 rounded-[2.5rem] border border-gray-800 shadow-2xl overflow-hidden animate-zoom-in flex flex-col lg:flex-row max-h-[92vh]">
-            <button onClick={() => setSelectedProject(null)} className="absolute top-6 right-6 text-gray-400 hover:text-white p-3 bg-gray-950/80 backdrop-blur-md border border-gray-800 rounded-2xl z-[110]"><IconX size={20} /></button>
-            <div className="w-full lg:w-[65%] bg-black flex items-center justify-center relative min-h-[350px] lg:min-h-0">
+      {/* Project Detail Modal - Using Portal */}
+      {selectedProject && createPortal(
+        <div className="fixed inset-0 z-[200] bg-gray-950/98 flex items-center justify-center p-4 md:p-8 backdrop-blur-md overflow-y-auto">
+          <div className="relative w-full max-w-6xl bg-gray-900 rounded-xl border border-gray-800 shadow-2xl overflow-hidden animate-zoom-in flex flex-col lg:flex-row max-h-[92vh]">
+            <button onClick={() => setSelectedProject(null)} className="absolute top-6 right-6 text-gray-400 hover:text-white p-3 bg-gray-950/80 backdrop-blur-md border border-gray-800 rounded-xl z-[210] hover:scale-110 transition-transform"><IconX size={20} /></button>
+            <div className={`w-full lg:w-[65%] bg-black flex items-center justify-center relative min-h-[350px] lg:min-h-0 ${activeMedia.type === 'image' && !loadedImages[activeMedia.url] ? 'animate-shimmer-bg animate-shimmer' : ''}`}>
                {activeMedia.type === 'video' ? (
                   <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${getYouTubeId(activeMedia.url)}?autoplay=1`} className="w-full h-full absolute inset-0" frameBorder="0" allowFullScreen></iframe>
                ) : (
-                  <img src={activeMedia.url} alt={selectedProject.title} className="w-full h-full object-contain" />
+                  <img 
+                    src={getOptimizedUrl(activeMedia.url, 1600, 85)} 
+                    alt={selectedProject.title} 
+                    onLoad={() => handleImageLoad(activeMedia.url)}
+                    className={`w-full h-full object-contain transition-opacity duration-500 ${loadedImages[activeMedia.url] ? 'opacity-100 blur-0' : 'opacity-0 blur-lg'}`} 
+                  />
                )}
             </div>
             <div className="w-full lg:w-[35%] p-10 flex flex-col h-full bg-gray-900 overflow-y-auto custom-scrollbar">
@@ -546,15 +611,25 @@ const Home: React.FC = () => {
               <div className="mt-auto space-y-4">
                  <h4 className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-2"><IconLayers size={14} /> Gallery</h4>
                  <div className="grid grid-cols-3 gap-2">
-                    <img onClick={() => setActiveMedia({url: selectedProject.media_url, type: selectedProject.type})} src={selectedProject.thumbnail_url} className="aspect-square object-cover rounded-xl cursor-pointer border border-gray-800 hover:border-primary" />
+                    <img 
+                      onClick={() => setActiveMedia({url: selectedProject.media_url, type: selectedProject.type})} 
+                      src={getOptimizedUrl(selectedProject.thumbnail_url, 300, 70)} 
+                      className={`aspect-square object-cover rounded-xl cursor-pointer border border-gray-800 hover:border-primary transition-all ${activeMedia.url === selectedProject.media_url ? 'border-primary' : ''}`} 
+                    />
                     {selectedProject.media_gallery?.map((url, i) => (
-                       <img key={i} onClick={() => setActiveMedia({url, type: 'image'})} src={url} className="aspect-square object-cover rounded-xl cursor-pointer border border-gray-800 hover:border-primary" />
+                       <img 
+                         key={i} 
+                         onClick={() => setActiveMedia({url, type: 'image'})} 
+                         src={getOptimizedUrl(url, 300, 70)} 
+                         className={`aspect-square object-cover rounded-xl cursor-pointer border border-gray-800 hover:border-primary transition-all ${activeMedia.url === url ? 'border-primary' : ''}`} 
+                       />
                     ))}
                  </div>
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

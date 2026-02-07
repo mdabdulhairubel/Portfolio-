@@ -23,7 +23,7 @@ const About: React.FC = () => {
   );
 
   return (
-    <div className="py-24 space-y-32 overflow-hidden relative">
+    <div className="py-24 space-y-32 overflow-hidden relative animate-fade-in">
       {/* Intro Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div className="absolute -top-10 -left-10 w-full h-full bg-grid-subtle opacity-20 pointer-events-none -z-10"></div>

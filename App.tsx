@@ -30,8 +30,10 @@ const Header = () => {
     <header className="sticky top-0 z-50 w-full bg-gray-950/80 backdrop-blur-md border-b border-gray-800">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
-          <Link to="/" className="flex items-center space-x-2">
-            <span className="text-2xl font-bold gradient-text leading-none tracking-tighter">{APP_NAME}</span>
+          <Link to="/" className="flex items-center space-x-2 group">
+            <span className="text-2xl font-bold text-white leading-none tracking-tighter transition-colors group-hover:text-primary/90">
+              {APP_NAME}<span className="text-primary">.</span>
+            </span>
           </Link>
 
           {/* Desktop Menu */}
@@ -110,7 +112,9 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-16 mb-16">
           <div className="col-span-1 md:col-span-2">
-            <h2 className="text-3xl font-bold gradient-text mb-6">{APP_NAME}</h2>
+            <h2 className="text-3xl font-bold text-white mb-6">
+              {APP_NAME}<span className="text-primary">.</span>
+            </h2>
             <p className="text-gray-400 max-w-sm mb-8 leading-relaxed">
               Senior Visualizer specializing in high-end CGI commercials, motion graphics, and narrative video editing.
             </p>

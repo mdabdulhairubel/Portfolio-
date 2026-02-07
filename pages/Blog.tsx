@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Calendar, User, ArrowRight, ChevronRight } from 'lucide-react';
 import { supabase } from '../supabase.ts';
@@ -24,7 +23,7 @@ const Blog: React.FC = () => {
   );
 
   return (
-    <div className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 animate-fade-in">
       <div className="text-center mb-20">
         <h1 className="text-4xl md:text-6xl font-bold mb-6">Creative Insights</h1>
         <p className="text-gray-400 max-w-2xl mx-auto text-lg">Articles about design, motion, and the future of visual storytelling.</p>
